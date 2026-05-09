@@ -1,0 +1,100 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#f8fafc"/>
+  
+  <!-- Central circle -->
+  <circle cx="400" cy="300" r="80" fill="#3b82f6" stroke="#1e40af" stroke-width="3"/>
+  <text x="400" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">
+    CLAUDE
+  </text>
+  <text x="400" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">
+    CODE
+  </text>
+  
+  <!-- Requirement circles positioned evenly around the center in a circle -->
+  <!-- Using radius of 200px from center (400, 300) and 45-degree intervals -->
+  
+  <!-- 1. Repository - top (0°) -->
+  <circle cx="400" cy="100" r="60" fill="#10b981" stroke="#047857" stroke-width="2"/>
+  <text x="400" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    REPOSITORY
+  </text>
+  <text x="400" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Task Storage)
+  </text>
+  
+  <!-- 2. Standards - top right (45°) -->
+  <circle cx="541" cy="159" r="60" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+  <text x="541" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    STANDARDS
+  </text>
+  <text x="541" y="169" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Guidance)
+  </text>
+  
+  <!-- 3. Orchestra - right (90°) -->
+  <circle cx="600" cy="300" r="60" fill="#8b5cf6" stroke="#7c3aed" stroke-width="2"/>
+  <text x="600" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    ORCHESTRA
+  </text>
+  <text x="600" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Coordination)
+  </text>
+  
+  <!-- 4. Workspace - bottom right (135°) -->
+  <circle cx="541" cy="441" r="60" fill="#ef4444" stroke="#dc2626" stroke-width="2"/>
+  <text x="541" y="436" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    WORKSPACE
+  </text>
+  <text x="541" y="451" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Sessions)
+  </text>
+  
+  <!-- 5. Toolkit - bottom (180°) -->
+  <circle cx="400" cy="500" r="60" fill="#06b6d4" stroke="#0891b2" stroke-width="2"/>
+  <text x="400" y="495" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    TOOLKIT
+  </text>
+  <text x="400" y="510" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Tool Access)
+  </text>
+  
+  <!-- 6. Lifecycle - bottom left (225°) -->
+  <circle cx="259" cy="441" r="60" fill="#ec4899" stroke="#db2777" stroke-width="2"/>
+  <text x="259" y="436" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    LIFECYCLE
+  </text>
+  <text x="259" y="451" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Development)
+  </text>
+  
+  <!-- 7. Pipeline - left (270°) -->
+  <circle cx="200" cy="300" r="60" fill="#84cc16" stroke="#65a30d" stroke-width="2"/>
+  <text x="200" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    PIPELINE
+  </text>
+  <text x="200" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Delivery)
+  </text>
+  
+  <!-- 8. Memory - top left (315°) -->
+  <circle cx="259" cy="159" r="60" fill="#f97316" stroke="#ea580c" stroke-width="2"/>
+  <text x="259" y="154" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
+    MEMORY
+  </text>
+  <text x="259" y="169" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">
+    (Context)
+  </text>
+  
+  <!-- Connection lines from center to each requirement -->
+  <line x1="400" y1="220" x2="400" y2="160" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="459" y1="241" x2="500" y2="200" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="480" y1="300" x2="540" y2="300" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="459" y1="359" x2="500" y2="400" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="400" y1="380" x2="400" y2="440" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="341" y1="359" x2="300" y2="400" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="320" y1="300" x2="260" y2="300" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  <line x1="341" y1="241" x2="300" y2="200" stroke="#64748b" stroke-width="2" opacity="0.6"/>
+  
+
+</svg>
