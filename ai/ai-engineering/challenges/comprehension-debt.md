@@ -2,7 +2,7 @@
 
 **Source:** [Comprehension Debt](https://addyosmani.com/blog/comprehension-debt/) — Addy Osmani
 
-**Companion piece:** [Cognitive Surrender](./cognitive-surrender.md) — same author, treats comprehension debt as a downstream effect of the posture engineers adopt toward AI.
+**Companion pieces:** [Cognitive Surrender](./cognitive-surrender.md) — same author, treats comprehension debt as a downstream effect of the posture engineers adopt toward AI. [Intent Debt](./intent-debt.md) — same author; the third leg of the triple-debt model, where comprehension debt maps to *cognitive debt*.
 
 ## Summary
 
