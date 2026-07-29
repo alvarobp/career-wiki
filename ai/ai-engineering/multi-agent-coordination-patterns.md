@@ -1,6 +1,8 @@
 # Multi-Agent Coordination Patterns
 
-**Source:** [Multi-Agent Coordination Patterns](https://claude.com/blog/multi-agent-coordination-patterns) - Anthropic
+**Sources:**
+- [Multi-Agent Coordination Patterns](https://claude.com/blog/multi-agent-coordination-patterns) - Anthropic
+- [Interview with Boris, creator of Claude Code](https://www.youtube.com/watch?v=qyPCVqFUyDo) - YouTube
 
 ## Summary
 
@@ -55,3 +57,13 @@ Three questions guide pattern selection:
 ## Core Insight
 
 Start with **orchestrator-subagent** as the default, then let its failure modes guide you toward other patterns. The coordination pattern should match the structure of the problem — not the other way around. Over-engineering coordination is itself a source of failure.
+
+## Where This Leads: Orchestration as Test-Time Compute
+
+In the [interview with Boris](https://www.youtube.com/watch?v=qyPCVqFUyDo), Claude Code's **dynamic workflows** are described as the direct continuation of these patterns at scale — orchestrating dozens, hundreds or thousands of agents from a single prompt.
+
+- The design comes from functional programming: an **algebra for agents**, with primitives to run agents **in sequence** and **in parallel**, composed inside a sandbox
+- A single task fans out into stages — a first pass by many agents, a second stage that verifies or summarises the work, a third fan-out — which is orchestrator-subagent and generator-verifier composed rather than chosen between
+- Framed as a **new form of test-time compute**: after neural net size, training data and training flops came token generation at inference, and orchestration is now a further axis for scaling the compute spent on a hard task
+
+See [Long-Running Agents and Dynamic Workflows](../agentic-coding/techniques/long-running-agents-and-dynamic-workflows.md) for the practical side — verification loops, steering, and tasks that run for days or weeks.

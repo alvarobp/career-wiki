@@ -1,6 +1,8 @@
 # Agent Skills: Encoding Senior Engineering Discipline into AI Agents
 
-**Source:** [Agent Skills](https://addyosmani.com/blog/agent-skills) — Addy Osmani, May 2026
+**Sources:**
+- [Agent Skills](https://addyosmani.com/blog/agent-skills) — Addy Osmani, May 2026
+- [Boris Cherny on building Claude Code](https://www.youtube.com/watch?v=qyPCVqFUyDo) — interview, July 2026 (counterpoint on periodically deleting skills)
 
 **Companion pieces:** [Comprehension Debt](../ai-engineering/challenges/comprehension-debt.md) and [Cognitive Surrender](../ai-engineering/challenges/cognitive-surrender.md) — same author. Where those articles diagnose what AI coding loses, Agent Skills proposes the operational fix: encode the lost discipline as workflows the agent must follow.
 
@@ -85,3 +87,11 @@ They matter most for **long-running agents**, where skipped steps compound into 
 The framework reframes AI agents as **extremely able junior engineers lacking instinct for invisible work**. The job becomes encoding discipline so rigorously that the agent cannot rationalize shortcuts. Capability isn't the bottleneck; the bottleneck is whether the harness around the agent makes the right behavior the path of least resistance.
 
 This connects directly to the [comprehension debt](../ai-engineering/challenges/comprehension-debt.md) problem: skills are how you keep verification, scope, and review from being silently dropped at the moment generation speed makes them feel like overhead.
+
+## Counterpoint: Skills Have a Shelf Life
+
+Boris Cherny, creator of Claude Code, argues the opposite pressure applies as models improve: much of what a skill encodes is correction for behavior the model should have known but didn't. On shipping Opus 5, the Claude Code team deleted over 80% of its system prompt because the model now does that work unprompted, and the accompanying advice to users was to delete `CLAUDE.md`, skills, and hooks every six months and see what happens without them.
+
+The method is **ablation** — delete everything, then bring it back line by line, adding an instruction back only after watching the model repeatedly stumble on the same thing. Every instruction is read on every single run, so an unearned one is pure cost. Over-specification is named as the common failure mode for long-time engineers: describe the task, the guardrails, and the exit criteria, then let the model work.
+
+The two positions overlap more than they conflict. The interview names verification as "the single most important thing that people do not get right" — principle 3 above, arrived at independently. What it disputes is the durable value of the *prose* around it: a skill that survives ablation is load-bearing, one that doesn't was scaffolding for a model generation that has passed. See [ablation-driven harness design](techniques/ablation-driven-harness-design.md).
