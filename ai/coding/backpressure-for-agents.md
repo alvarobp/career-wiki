@@ -3,6 +3,9 @@
 *Summary of principles from Moss's blog post*
 https://banay.me/dont-waste-your-backpressure
 
+*Also draws on Addy Osmani's "The Orchestration Tax"*
+https://x.com/addyosmani/status/2059844244907696186
+
 ## Overview
 
 **Back pressure** refers to automated feedback mechanisms that help agents identify and correct mistakes independently. By maximizing back pressure in your workflows, you enable AI agents to self-correct through iteration, freeing engineers from manual review of every action.
@@ -80,3 +83,16 @@ When delegating to agents, ask:
 - What tools can I add to increase back pressure?
 
 The more back pressure in your workflow, the more complex work you can safely delegate to agents.
+
+## You Are the Consumer
+
+*From Osmani's "The Orchestration Tax"*
+
+Back pressure also constrains how many agents you should run at once. In a concurrent system the producer slows down to match the consumer:
+
+- The **agents are the producer** - starting one is a keystroke
+- **Your code review is the consumer** - every merge decision routes through one serial resource, your attention
+
+The concrete rule: **the right number of parallel agents is the number you can actually code review properly.** For most people that is low single digits, no matter how many the tool will happily let you spawn.
+
+This is the flip side of maximising back pressure inside the loop. Automated feedback exists so the agent can prove the boring 80% itself - a passing test, a screenshot - leaving your scarce review capacity for the 20% that genuinely needs human judgement. Skip this and the cost is paid anyway, as shallow reviews and a stale mental model of your own codebase.

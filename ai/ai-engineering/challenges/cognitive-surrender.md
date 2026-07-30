@@ -4,6 +4,8 @@
 - [Cognitive Surrender](https://addyosmani.com/blog/cognitive-surrender/) — Addy Osmani, May 5, 2026
 - [Understanding the code your agents write](https://www.youtube.com/watch?v=WkBPX-oDMnA) — Geoffrey Litt (Notion), AI Engineer design engineering track talk
 
+- [The Orchestration Tax](https://x.com/addyosmani/status/2059844244907696186?s=12) — Addy Osmani
+
 ## Summary
 
 Cognitive surrender is the failure mode where engineers stop forming independent judgments about AI output and instead absorb the model's confidence as their own. It is distinct from cognitive offloading — delegating execution while still evaluating results — because surrender abandons evaluation entirely. The outputs may look identical: shipped code, closed tickets, green CI. But underneath, the engineer's mental model is hollowing out, accruing "comprehension debt" that compounds with every unexamined acceptance.
@@ -35,6 +37,14 @@ Research from Shaw & Nave (Wharton) found **73% of participants accepted incorre
 Each unchecked decision is a small loan against future understanding. The interest is paid later — when a production incident, a refactor, or a model regression demands the mental model the engineer never built. Like financial debt, it is invisible during good times and crushing when conditions change.
 
 The compounding nature is the trap: once the mental model is partially hollow, the engineer becomes *more* dependent on AI for the next decision, which further hollows the model, which deepens dependence.
+
+## The Structural Cause: Exceeding Review Capacity
+
+> See the companion piece: [The Orchestration Tax](./orchestration-tax.md).
+
+Osmani's later piece on the orchestration tax supplies the mechanism underneath the failure: surrender is usually not a lapse of discipline but the visible symptom of an attention budget that has been over-subscribed. Starting an agent is a keystroke; closing the loop on one — checking correctness, reconciling it with what the other agents touched — has to acquire a single lock, and there is exactly one of you holding it. Spawning eight agents does not speed up judgment. It deepens the queue in front of it.
+
+When production exceeds review capacity, the deficit does not vanish; it gets paid by silently lowering standards. In his words: "If you try to grind it out, the limit just shows up as shallow code reviews or experiencing cognitive surrender where you just accept the agent's code because forming your own opinion costs attention you don't have anymore." Read this way, surrender is what an over-subscribed serial reviewer does under load — which means willpower is the wrong lever. The fix is backpressure: scale the number of parallel agents to your actual review rate rather than to what the UI permits, batch reviews so you pay fewer cold context reloads, and spend the lock only on the judgment the machine cannot verify for itself.
 
 ## Resistance Strategies
 

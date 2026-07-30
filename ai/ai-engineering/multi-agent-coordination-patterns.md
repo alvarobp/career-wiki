@@ -4,6 +4,8 @@
 - [Multi-Agent Coordination Patterns](https://claude.com/blog/multi-agent-coordination-patterns) - Anthropic
 - [Interview with Boris, creator of Claude Code](https://www.youtube.com/watch?v=qyPCVqFUyDo) - YouTube
 
+- [The Orchestration Tax](https://x.com/addyosmani/status/2059844244907696186?s=12) - Addy Osmani
+
 ## Summary
 
 Five coordination patterns define how multiple AI agents can work together on complex tasks. Each pattern makes different tradeoffs around communication overhead, task decomposition, and failure modes. The key insight is to start with the simplest viable pattern — orchestrator-subagent — and evolve toward more complex patterns only when you hit specific limitations.
@@ -67,3 +69,16 @@ In the [interview with Boris](https://www.youtube.com/watch?v=qyPCVqFUyDo), Clau
 - Framed as a **new form of test-time compute**: after neural net size, training data and training flops came token generation at inference, and orchestration is now a further axis for scaling the compute spent on a hard task
 
 See [Long-Running Agents and Dynamic Workflows](../agentic-coding/techniques/long-running-agents-and-dynamic-workflows.md) for the practical side — verification loops, steering, and tasks that run for days or weeks.
+
+## Where This Stops: The Orchestration Tax
+
+Addy Osmani's [orchestration tax](https://x.com/addyosmani/status/2059844244907696186?s=12) sets the ceiling on all five patterns. Whatever the topology, the work eventually reaches a human who has to judge it and merge it — and that step does not parallelize.
+
+- Starting an agent is a keystroke; **closing the loop on it is not cheap**, and there is exactly one of you to do it
+- By Amdahl's Law, the speedup is capped by the serial fraction — here, **judgement**. Adding agents optimises the part that was never the constraint and just deepens the queue in front of it
+- Left unpaid, the tax shows up as shallow reviews and **cognitive surrender** — accepting the agent's code because forming your own opinion costs attention you no longer have
+- The practical fix is backpressure: **scale the fleet to your review rate**, batch reviews to avoid cold context reloads, and spend your attention only on what the machine can't verify itself
+
+This reframes pattern selection: the goal is not the topology that produces the most agent output, but the one that puts the least unverified work in front of the single serial reviewer.
+
+See [The Orchestration Tax](./challenges/orchestration-tax.md) for the full argument.
