@@ -1,6 +1,8 @@
 # Cognitive Surrender: When AI Assistance Erodes Engineering Judgment
 
-**Source:** [Cognitive Surrender](https://addyosmani.com/blog/cognitive-surrender/) — Addy Osmani, May 5, 2026
+**Sources:**
+- [Cognitive Surrender](https://addyosmani.com/blog/cognitive-surrender/) — Addy Osmani, May 5, 2026
+- [Understanding the code your agents write](https://www.youtube.com/watch?v=WkBPX-oDMnA) — Geoffrey Litt (Notion), AI Engineer design engineering track talk
 
 ## Summary
 
@@ -49,6 +51,16 @@ The compounding nature is the trap: once the mental model is partially hollow, t
 - **Anti-rationalization tables** — explicit lists of "reasons I might be tempted to approve without understanding" — turn implicit drift into a visible checklist.
 - **Verification as hard exit criteria** — a task isn't done until evidence exists, not just until output is produced.
 - **Conceptual inquiry before generation** — understand the shape of the problem before asking the model for code.
+
+## The Constructive Counterpart
+
+> See the companion framing: [Understanding to Participate](../principles/understanding-to-participate.md).
+
+Geoffrey Litt's talk arrives at the same erosion from the opposite direction. He calls it **cognitive debt** (a term he credits to Margaret-Anne Storey, and which Simon Willison also blogged about), and describes the same trap in the first person: "You're vibe coding, things are going well, and then at some point you realize, wait, I have no idea what's going on. I basically can't participate anymore."
+
+The difference is what the debt is argued to cost. Osmani's case for staying engaged is defensive — understanding as the guard against unexamined acceptance. Litt argues that **verification is the weaker reason**, because agents are steadily getting better at correctness checking themselves, and that the durable reason to understand is *participation*: each loop you actually engage with leaves you changed, and that accumulated mental model is what lets you have the next idea. Understanding is the input to creative contribution, not just the audit trail on someone else's output.
+
+This reframes the resistance strategies above as something other than discipline against a temptation. Litt's practices — agent-authored explainer docs that teach background and intuition before showing the diff, quizzes he must pass before sending a PR for review (a "speed regulator" so work moves at the speed of understanding rather than only the speed of correctness), disposable micro-worlds and debuggers built solely to make a system's behavior legible, and shared spaces where a team builds the mental model together — all use the agent to deepen the engineer's model rather than to substitute for it. The claim is that the same tools that enable surrender can, pointed differently, produce *more* understanding than was available before AI: "putting ourselves more deeply in loops than we ever have before."
 
 ## Core Insight
 

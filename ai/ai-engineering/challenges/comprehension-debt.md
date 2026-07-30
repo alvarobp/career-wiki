@@ -4,6 +4,8 @@
 
 **Companion pieces:** [Cognitive Surrender](./cognitive-surrender.md) — same author, treats comprehension debt as a downstream effect of the posture engineers adopt toward AI. [Intent Debt](./intent-debt.md) — same author; the third leg of the triple-debt model, where comprehension debt maps to *cognitive debt*.
 
+**See also:** [Understanding to Participate](../principles/understanding-to-participate.md) — Geoffrey Litt reframes what this debt actually costs (the ability to keep having the next idea, not just the ability to catch bugs) and offers concrete practices — explainer docs, agent-written quizzes, microworlds — for paying it down.
+
 ## Summary
 
 Comprehension debt is the **growing gap between how much code exists in a system and how much of it any human genuinely understands**. Unlike technical debt — which announces itself through friction (slow builds, brittle modules, painful merges) — comprehension debt accumulates invisibly. The code looks clean, the tests pass, the dashboards stay green, and yet no one on the team can explain *why* the system behaves the way it does or predict how it will fail.
