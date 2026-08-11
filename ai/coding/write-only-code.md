@@ -1,6 +1,8 @@
 # Write-Only Code
 
-**Source:** [Write-Only Code](https://www.heavybit.com/library/article/write-only-code) - Joseph Ruscio, General Partner at Heavybit, February 2026
+**Sources:**
+- [Write-Only Code](https://www.heavybit.com/library/article/write-only-code) - Joseph Ruscio, General Partner at Heavybit, February 2026
+- [Agentic Code Review](https://addyosmani.com/blog/agentic-code-review) - Addy Osmani
 
 ## Summary
 
@@ -41,6 +43,14 @@ This connects to several related concepts in AI engineering:
 - **Backpressure for agents** - Write-only code demands stronger automated feedback loops (tests, type systems, linters) since human review is no longer the safety net
 - **Context rot** - As codebases grow with AI-generated code, the volume of context that would need to be reviewed exceeds what models (or humans) can reliably process
 - **The Bitter Lesson** - General methods (automated verification, runtime monitoring) will outperform human-knowledge approaches (manual code review) as scale increases
+
+## The Review System That Prevents It
+
+Addy Osmani's "Agentic Code Review" is the direct continuation of this argument: where Ruscio names the failure mode, Osmani specifies the system that keeps code from becoming write-only by default. His framing is that generation got cheap while understanding stayed exactly as expensive, so the bottleneck moved from writing to verifying — and verification is now the leveraged skill.
+
+The practical shape he proposes: tier review by risk rather than by author, fast-fail expensive PRs on predictive signals before a human looks, require evidence up front (intent statement, test output, proof of execution), keep diffs small and instruct agents to produce reviewable ones, scrutinize test changes since agents sometimes "fix" tests to match broken behavior, hold CI gates strictly, and keep the merge decision with a human. He describes this as human *on* the loop rather than *in* it — sampling and spot-checking instead of reading every diff — while warning that fully closed model-reviews-model loops are "borrowed confidence" with correlated blind spots.
+
+One mechanism matters especially here: agents reason through decisions and then discard that reasoning, so the reviewer is the first human to see the code with no access to intent. Capturing agent decision logs makes reconstructing that intent cheap enough to be worth doing, which is precisely the "code reading coverage" problem approached from the other end.
 
 ## Key Takeaway
 

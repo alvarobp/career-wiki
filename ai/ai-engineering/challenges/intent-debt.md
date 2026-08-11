@@ -1,6 +1,8 @@
 # Intent Debt: The Missing *Why* Behind the Code
 
-**Source:** [Intent Debt](https://addyosmani.com/blog/intent-debt/) — Addy Osmani, June 5, 2026
+**Sources:**
+- [Intent Debt](https://addyosmani.com/blog/intent-debt/) — Addy Osmani, June 5, 2026
+- [Agentic Code Review](https://addyosmani.com/blog/agentic-code-review) — Addy Osmani
 
 **Companion piece:** [Comprehension Debt](./comprehension-debt.md) — same author; maps to *cognitive debt* in the triple-debt model below. See also [Cognitive Surrender](./cognitive-surrender.md).
 
@@ -29,6 +31,8 @@ The three are independent: clean, well-understood code can still carry heavy int
 - Pre-agent, intent survived informally — institutional memory, the person who "just knows," a quick Slack thread. That channel doesn't exist for an agent starting cold.
 - Every fresh agent session re-pays the cost of unexplained decisions. The economics flip from "occasionally re-derive intent" to "re-derive intent constantly, in parallel."
 
+- Agents *do* reason through their decisions — they just discard the reasoning once the code is emitted. In [Agentic Code Review](https://addyosmani.com/blog/agentic-code-review), Osmani points out the consequence: the reviewer is the first human to see the code, and they see it with no access to the intent that produced it. Intent debt is manufactured at the moment of generation, not years later.
+
 ## How High Intent Debt Manifests
 
 - An agent **removes a guard or workaround** because nothing recorded why it was there.
@@ -45,6 +49,8 @@ The fix is to move intent out of heads and into durable artifacts the agent read
 - **Intent ledgers** — `AGENTS.md` (and similar) files documenting conventions, constraints, and the reasoning behind them, loaded into every agent's context.
 - **Decision logs (ADRs)** — record the rationale *at the moment of the decision*, when the why is still fresh, not reconstructed later.
 - **Learning loops** — have agents document why an approach succeeded or failed, so hard-won reasoning is captured rather than re-discovered.
+
+- **Agent decision logs** — capture the reasoning an agent works through *before* it discards it, so reconstructing intent at review time is cheap rather than archaeological (from [Agentic Code Review](https://addyosmani.com/blog/agentic-code-review)).
 
 ## Core Insight
 

@@ -1,6 +1,6 @@
 # Comprehension Debt: The Hidden Cost of AI-Generated Code
 
-**Source:** [Comprehension Debt](https://addyosmani.com/blog/comprehension-debt/) — Addy Osmani
+**Sources:** [Comprehension Debt](https://addyosmani.com/blog/comprehension-debt/) — Addy Osmani; [Agentic Code Review](https://addyosmani.com/blog/agentic-code-review) — Addy Osmani (2026 review-bottleneck data)
 
 **Companion pieces:** [Cognitive Surrender](./cognitive-surrender.md) — same author, treats comprehension debt as a downstream effect of the posture engineers adopt toward AI. [Intent Debt](./intent-debt.md) — same author; the third leg of the triple-debt model, where comprehension debt maps to *cognitive debt*.
 
@@ -31,6 +31,16 @@ AI inverts a power balance the industry depended on for decades:
 - **Post-AI:** Junior engineers (and senior engineers in junior mode) generate faster than seniors can audit. The review bottleneck collapses, and with it the quality filter that depended on it.
 
 The implication: organizations that scaled with AI generation **must scale comprehension capacity in parallel**, or they're effectively shipping unreviewed code while believing they're reviewing it.
+
+### The 2026 Numbers
+
+Addy Osmani's later piece, [Agentic Code Review](https://addyosmani.com/blog/agentic-code-review), puts figures on the asymmetry:
+
+- **GitClear:** 4x code output produced only **~12% productivity gain**. The difference is absorbed by review work.
+- **Faros AI:** code churn up **861%**, defect rates from **9% to 54%**, review duration up **441.5%**, zero-review merges up **31.3%**.
+- **CodeRabbit:** AI-written code carries **1.7x more issues** than human-written code.
+
+The pattern is comprehension debt showing up on the balance sheet: output multiplies, the value delivered barely moves, and the surplus is either paid down in longer reviews or waved through unreviewed. Osmani's summary — *"writing got cheap; understanding stayed exactly as expensive"* — is the same asymmetry stated from the review side.
 
 ## Why Tests and Specs Don't Close the Gap
 
