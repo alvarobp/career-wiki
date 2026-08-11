@@ -1,6 +1,8 @@
 # The Orchestration Tax
 
-**Source:** [The Orchestration Tax](https://x.com/addyosmani/status/2059844244907696186?s=12) - Addy Osmani
+**Sources:**
+- [The Orchestration Tax](https://x.com/addyosmani/status/2059844244907696186?s=12) - Addy Osmani
+- [Loop Engineering](https://x.com/addyosmani/status/2064127981161959567) - Addy Osmani
 
 ## Summary
 
@@ -31,6 +33,12 @@ Three borrowed intuitions from concurrent and performance engineering:
 - **Batch your reviews.** Reviewing four agents in one sitting is far cheaper than checking one, leaving, and returning cold. Give agents a long leash and let work pile up a bit.
 - **Spend the lock only on judgement.** Don't burn attention on what the machine can verify itself — make the agent write a passing test or produce a screenshot. Agents can prove the boring 80%; reserve your attention for the 20% that genuinely needs a human.
 - **Protect your serial time.** The bottleneck deserves your best hours, not the leftover minutes between check-ins. Sometimes the highest-leverage move is to close the laptop full of agents and think hard about one problem with the lock held the whole time. **Orchestrating is overhead around the work, not the work.**
+
+## Tooling Removes the Collisions, Not the Ceiling
+
+In *Loop Engineering*, Osmani makes the point explicitly against this note: git worktrees give each agent its own checkout on its own branch, so two agents editing the same file can no longer clobber each other. **That solves the mechanical collision and nothing else.** How many loops you can actually run is still set by your review bandwidth, not by how many isolated checkouts the tool will happily hand you.
+
+The same asymmetry runs through the whole loop-engineering stack: automations, skills, connectors and verifier sub-agents all make the producer side cheaper and more autonomous, which only feeds the bottleneck faster. A loop running unattended is a loop making mistakes unattended — "done" from a verifier agent is a claim, not a proof, and it still has to acquire your lock.
 
 ## Core Insight
 

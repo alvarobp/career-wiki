@@ -1,6 +1,8 @@
 # Software Factory
 
-**Source:** [Software Factories And The Agentic Moment](https://factory.strongdm.ai/) - Justin McCarthy (CTO, StrongDM), February 2026
+**Sources:**
+- [Software Factories And The Agentic Moment](https://factory.strongdm.ai/) - Justin McCarthy (CTO, StrongDM), February 2026
+- [Loop Engineering](https://x.com/addyosmani/status/2064127981161959567) - Addy Osmani
 
 ## Summary
 
@@ -45,6 +47,12 @@ Creating high-fidelity SaaS clones, massive scenario suites, or other factory in
 
 The factory mindset requires **deliberate naivete**: removing habits, conventions, and constraints of "Software 1.0." What was unthinkable six months ago is now routine.
 
+## The Layer Above: Loop Engineering
+
+Addy Osmani places [Loop Engineering](../loop-engineering.md) one floor above both the agent harness and the factory. The harness is the environment a single agent runs inside; the factory is the system that builds the software. A loop is that same system running on a timer, spawning its own helpers and feeding itself — an automation fires on a schedule, discovers work, hands it to sub-agents in isolated worktrees, and writes state back to disk so tomorrow's run resumes where today's stopped.
+
+The framing matches the factory's own logic: you stop prompting the agent and instead design the system that prompts it. The memory lives outside the conversation (a markdown file, a board) because the model forgets between runs and the repo does not. Osmani is more cautious than the factory framing about what this removes — verification stays with the human, comprehension debt grows faster the smoother the loop runs, and two people building the same loop get opposite results depending on whether they use it to move faster on work they understand or to avoid understanding it.
+
 ## Related Concepts
 
 - [Digital Twin Universe](../techniques/digital-twin-universe.md) — Behavioral clones of third-party services for validation
@@ -54,3 +62,4 @@ The factory mindset requires **deliberate naivete**: removing habits, convention
 - [Pyramid Summaries](../techniques/pyramid-summaries.md) — Reversible multi-level summarization
 - [The Filesystem](../techniques/filesystem-as-agent-memory.md) — Files as agent memory substrate
 - [Write-Only Code](../write-only-code.md) — The complementary idea that production code need not be read by humans
+- [Loop Engineering](../loop-engineering.md) — The factory running on a timer, prompting itself
