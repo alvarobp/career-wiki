@@ -4,6 +4,8 @@
 - [Software Factories And The Agentic Moment](https://factory.strongdm.ai/) - Justin McCarthy (CTO, StrongDM), February 2026
 - [Loop Engineering](https://x.com/addyosmani/status/2064127981161959567) - Addy Osmani
 
+- [Dex Horthy on context engineering, loops and software factories](https://www.youtube.com/watch?v=Usufn8IQJgw) - The Pragmatic Engineer Podcast
+
 ## Summary
 
 A Software Factory is non-interactive development where specs + scenarios drive agents that write code, run harnesses, and converge without human review. The term describes a maturity level where software is "grown" rather than written — agents operate end-to-end from specification to validated artifact, with humans shaping intent rather than authoring code.
@@ -47,6 +49,16 @@ Creating high-fidelity SaaS clones, massive scenario suites, or other factory in
 
 The factory mindset requires **deliberate naivete**: removing habits, conventions, and constraints of "Software 1.0." What was unthinkable six months ago is now routine.
 
+## The Dark Factory And What Broke
+
+The endpoint of the factory is the **dark factory** — the term comes from manufacturing plants that are fully robotic and therefore need no lights, not even light switches. Raw materials in, cars out. Applied to software: no human reads any code. Review is replaced by agentic review, testing by agentic testing, and the whole system is treated as a black box where user complaints are the only signal that something is broken.
+
+Dex Horthy's team at HumanLayer built exactly this in July 2025 and shut it down by November. The failure mode he reports: after three to six months of shipping with nobody reading the code, the codebase becomes easier to rewrite than to fix. The specific incident was a root cause that Opus 4.1 could not find no matter how sophisticated the prompting — a primary key routed through the system as the wrong type — and the team spent roughly three weeks re-onboarding into code they had stopped reading three months earlier.
+
+His diagnosis is that the cost function of bad architecture is invisible to the training loop. Models improved dramatically on SWE-bench-shaped problems because harness and model were trained together, but bad program design does not fail a unit test — it hits three to six months later when the software has become hard to change. Agentic code review does not close the gap either: a model asked whether code is good tends toward sycophancy, and the model reading the code is the model that wrote it.
+
+See [Token Harder vs Token Smarter](../token-harder-vs-token-smarter.md) for the framing of the dark factory as the maximum-utilization end of that axis, and the leverage-seeking alternative.
+
 ## The Layer Above: Loop Engineering
 
 Addy Osmani places [Loop Engineering](../loop-engineering.md) one floor above both the agent harness and the factory. The harness is the environment a single agent runs inside; the factory is the system that builds the software. A loop is that same system running on a timer, spawning its own helpers and feeding itself — an automation fires on a schedule, discovers work, hands it to sub-agents in isolated worktrees, and writes state back to disk so tomorrow's run resumes where today's stopped.
@@ -63,3 +75,5 @@ The framing matches the factory's own logic: you stop prompting the agent and in
 - [The Filesystem](../techniques/filesystem-as-agent-memory.md) — Files as agent memory substrate
 - [Write-Only Code](../write-only-code.md) — The complementary idea that production code need not be read by humans
 - [Loop Engineering](../loop-engineering.md) — The factory running on a timer, prompting itself
+
+- [Token Harder vs Token Smarter](../token-harder-vs-token-smarter.md) — Maximising token throughput versus seeking leverage points

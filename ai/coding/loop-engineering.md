@@ -1,6 +1,8 @@
 # Loop Engineering
 
-**Source:** [Loop Engineering](https://x.com/addyosmani/status/2064127981161959567) - Addy Osmani, 2026
+**Sources:**
+- [Loop Engineering](https://x.com/addyosmani/status/2064127981161959567) - Addy Osmani, 2026
+- [Dex Horthy on context engineering, loop engineering and software factories](https://www.youtube.com/watch?v=Usufn8IQJgw) - The Pragmatic Engineer Podcast, 2026
 
 ## Summary
 
@@ -57,12 +59,28 @@ A morning **automation** runs a **triage skill** over yesterday's CI failures, o
 
 You designed it once. You prompted none of those steps.
 
+## Slow Loops: The Boring Version That Works
+
+Dex Horthy's team runs the least ambitious loop imaginable, and it's the one he actually recommends: a cron job in GitHub Actions each night runs a linter, **fixes one thing, commits, pushes**. You wake up to a single small PR that makes the codebase a little better. A developer still reads it and approves it.
+
+The reason to prefer this over the big-bang version is review-shaped: nobody merges a 60,000-line PR that fixed every lint error in the repo, so that loop produces nothing you can ship. One small PR a morning is a loop whose output actually clears the human gate.
+
+It scales along two separate dimensions, and it's worth keeping them apart:
+
+- **More feedback mechanisms** — add another checker and you get another PR. Their team runs React Doctor on the front end plus checks with no deterministic tooling at all, just a skill saying *here's what good looks like, here's what bad looks like, go fix one thing* (e.g. narrowing props that don't need to be optional). Four checkers, four PRs.
+- **More scope per run** — as you gain confidence in a given checker, go from fixing one thing to fixing four.
+
+Start at one thing on one checker and widen only where the output has earned it. Note what these loops are pointed at: **improving the codebase, not shipping the features users asked for** — the team reads all that code because they care how it's architected.
+
 ## What the Loop Still Doesn't Do For You
 
 Three problems get *sharper* as the loop gets better, not easier:
 
 - **Verification is still on you.** A loop running unattended is a loop making mistakes unattended. Splitting verifier from maker is what makes the loop's "it's done" mean something — and even then, *"done" is a claim, not a proof*.
 - **Your understanding rots if you allow it.** The faster the loop ships code you didn't write, the wider the gap between what exists and what you grasp — comprehension debt, growing faster the smoother the loop runs.
+
+- **The lights-off version has a shelf life.** Horthy's team built a fully automated factory in July 2025 and shut it down by November: roughly three to six months of shipping without anyone reading the code before it's easier to start over than to fix. When a bug finally needed a root cause no model could find, they spent weeks re-onboarding into their own codebase. Bad architecture is uniquely invisible to loops because *its cost function can't be evaluated by running the tests* — it hits months later, so nothing in the loop's feedback ever catches it.
+
 - **The comfortable posture is the risky one.** When the loop runs itself it's tempting to stop having an opinion and take whatever comes back — cognitive surrender. Designing the loop is the cure when done with judgement and the accelerant when done to avoid thinking. Same action, opposite result.
 
 ## Core Insight
@@ -78,3 +96,5 @@ Practically: design the loop against the shape rather than the vendor, since bot
 - **Comprehension debt** and **cognitive surrender** — the two failure modes a well-running loop accelerates
 - **Long-running agents** — the on-disk memory trick loop engineering inherits
 - **Compound engineering** — same compounding logic, applied to the loop's own state and skills rather than to individual work units
+
+- **Verification** — slow loops work because linters and tests make the target verifiable; loops are only as good as the feedback you can automate
