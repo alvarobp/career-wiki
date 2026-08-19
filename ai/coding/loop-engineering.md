@@ -4,6 +4,8 @@
 - [Loop Engineering](https://x.com/addyosmani/status/2064127981161959567) - Addy Osmani, 2026
 - [Dex Horthy on context engineering, loop engineering and software factories](https://www.youtube.com/watch?v=Usufn8IQJgw) - The Pragmatic Engineer Podcast, 2026
 
+- [Own the Outer Loop](https://x.com/addyosmani/status/2074927530482835916) - Addy Osmani, 2026
+
 ## Summary
 
 Loop engineering is replacing yourself as the person who prompts the agent: instead of typing a turn, reading the reply, and typing the next turn, you build a small system that finds the work, hands it out, checks it, records what's done, and decides what's next — and let *that* poke the agents. A loop is a recursive goal: you define a purpose and the AI iterates until it's complete.
@@ -59,6 +61,28 @@ A morning **automation** runs a **triage skill** over yesterday's CI failures, o
 
 You designed it once. You prompted none of those steps.
 
+## Where the Loop Ends: the Outer Loop
+
+Osmani's follow-up piece draws the line this note only gestures at. The loop as described here is the **inner loop** — investigate, implement, test, report — and it's *capability*. What sits outside it is the **outer loop** — decide, verify, approve, own — and that's *agency*. Agents run the inner loop; engineers own the outer one.
+
+The two are joined by exactly one thing: **evidence** crossing the boundary. The diff, the tests, the logs, the why. Inside, the loop produces evidence; outside, a human decides whether it's enough. Osmani's formula for the loop — `goal + cadence + isolated work + verification + state` — is the same five blocks above, with the **verdict** hanging off the outside of the ring.
+
+Three words carry the weight:
+
+- **Quality** — the checks you install before letting the system loose, which are what *produce* the evidence. Deliberately not maximal autonomy: grant only as much as you retain the **back pressure** to stop, regulate and check. Type checks, tests, hooks, sandbox limits, audit logs, monitors — ordinary engineering signals, which is why an agent emitting them is one your existing systems can hold.
+- **Verdict** — the production decision before work enters a dependent system: ship, block, redirect, narrow, guardrail, or reject. The model may write the line; the verdict is yours.
+- **Answerability** — that if asked, you can explain why. This is the part long-horizon agents quietly destroy: hour-scale runs make hundreds of decisions that were never recorded and can't be traced back to input tokens, so reconstructing the chain after the fact is not a thing you can afford to do. Answerability has to be designed in, not recovered later.
+
+The human stays out of the inner loop but belongs in four others: the **constraints loop** (what inputs, architectures, invariants), the **sampling loop** (how much output to actually review), the **audit loop** (what evidence to keep), and the **ownership loop** (which part of the production boundary is yours).
+
+**The numbers are why this stopped being philosophical.** 42% of committed code is already AI-generated or significantly AI-assisted (Sonar 2026), heading for an estimated 65% by 2027. 96% of engineers don't fully trust AI code, but only 48% always verify it — skepticism running about two to one ahead of the practice that would justify it. 85% now name review and validation as the bottleneck, and governance usually happens *after* creation, once the risk is already accepted (GitLab, June 2026). The gap isn't distrust; it's distrusting and shipping faster than you verify anyway.
+
+Osmani also puts numbers on two costs this note names abstractly: **cognitive surrender** — 73% of people accepted the AI's answer when it was wrong, and felt *more* confident than they would have without it (Wharton, 1,372 people) — and **comprehension debt** — engineers who learned through AI-generated code scored 17 points lower on a comprehension quiz, 50% against 67% (Anthropic RCT, 52 engineers).
+
+The career argument follows from the same test: **if it's a capability, it decays**. Speed is gone, recall is a context window, verification is automating — and we were the weak link there anyway. What holds longer is **taste** (judgment before the metric exists) and **judgment** itself, a slope rather than a wall. What doesn't decay at all is **accountability**: the half-life of an edge is one release, the half-life of a signature is a career. Agents can choose, route, merge and escalate inside a policy; only people inherit the consequences.
+
+The useful reframe for anyone building loops: **the bottleneck moves from "can we build this?" to "should this exist, and can we answer for it?"** Put the quality assurances *inside* the loop, grant autonomy through a back-pressure mechanism that governs how fast and how widely it runs, and put humans on the decisions — not as a release gate, but as the point where insight is actually worth having.
+
 ## Slow Loops: The Boring Version That Works
 
 Dex Horthy's team runs the least ambitious loop imaginable, and it's the one he actually recommends: a cron job in GitHub Actions each night runs a linter, **fixes one thing, commits, pushes**. You wake up to a single small PR that makes the codebase a little better. A developer still reads it and approves it.
@@ -98,3 +122,7 @@ Practically: design the loop against the shape rather than the vendor, since bot
 - **Compound engineering** — same compounding logic, applied to the loop's own state and skills rather than to individual work units
 
 - **Verification** — slow loops work because linters and tests make the target verifiable; loops are only as good as the feedback you can automate
+
+- **Answerability** — the outer-loop obligation long-horizon agents make hardest to satisfy: explaining what changed, why it was safe, and what happens if you're wrong
+- **Back pressure** — granting agents only as much autonomy as you retain the ability to stop and check
+- **Taste** and **alpha/decay** — what's left of the human edge once capability-shaped skills erode with each model release
