@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Turn a source into a bundle add.sh can plan from — its text and its images.
+"""Turn a source into a bundle wiki-add can plan from — its text and its images.
 
 Subcommands:
   x <url> <outdir>       an X/Twitter post or Article, via the FxTwitter API
   local <path> <outdir>  a page saved by hand: markdown, or complete HTML
+  curl <file> <outdir>   a page behind a paywall, via a curl command copied out
+                         of a browser's dev tools (the file holds the command)
 
 A bundle is a directory holding post.md (the source as markdown, with image links
 pointing into images/), the image files themselves, and meta.json (title, author,
@@ -11,7 +13,7 @@ date) for the note's Source line. Everything downstream reads post.md, so both
 subcommands have to produce the same shape.
 
 post.md is written last, so a bundle that has one is a bundle that finished
-downloading — which is what lets add.sh treat an existing directory as a cache.
+downloading — which is what lets wiki-add treat an existing directory as a cache.
 """
 import html
 import json
@@ -58,14 +60,21 @@ class Images:
     same thing in the markdown, in the filename and in a caption.
     """
 
-    def __init__(self, outdir):
+    def __init__(self, outdir, fetcher=None):
         self.dir = os.path.join(outdir, "images")
         self.items = []      # (source, filename) in document order
         self.seen = {}       # source -> filename
+        # A page fetched with someone's session may serve its images only to
+        # that same session, so the caller can supply its own way of getting them
+        self.fetcher = fetcher or (lambda url: fetch(url, binary=True))
 
-    def ref(self, source, alt="", base_dir=None):
+    def ref(self, source, alt="", base_dir=None, base_url=None):
         """Register an image (URL or local path) and return its markdown link."""
-        if base_dir and not re.match(r"^(https?:|data:)", source):
+        # An attribute written without a value — <img alt> — parses as None
+        alt = alt or ""
+        if base_url and not re.match(r"^(https?:|data:)", source):
+            source = urllib.parse.urljoin(base_url, source)
+        elif base_dir and not re.match(r"^(https?:|data:)", source):
             source = os.path.normpath(os.path.join(base_dir, source))
         if source.startswith("data:"):
             return ""
@@ -99,7 +108,7 @@ class Images:
             try:
                 if "://" in source:
                     with open(target, "wb") as handle:
-                        handle.write(fetch(source, binary=True))
+                        handle.write(self.fetcher(source))
                 else:
                     shutil.copyfile(source, target)
             except (OSError, urllib.error.URLError, urllib.error.HTTPError) as exc:
@@ -345,9 +354,9 @@ class HtmlToMarkdown(HTMLParser):
     emphasis, code and — the reason this path exists at all — images.
     """
 
-    def __init__(self, images, base_dir):
+    def __init__(self, images, base_dir, base_url=None):
         super().__init__(convert_charrefs=True)
-        self.images, self.base_dir = images, base_dir
+        self.images, self.base_dir, self.base_url = images, base_dir, base_url
         self.out, self.skip_depth, self.list_stack = [], 0, []
         self.pre, self.link, self.title = False, None, ""
         self.in_title = False
@@ -385,10 +394,14 @@ class HtmlToMarkdown(HTMLParser):
         elif tag == "a" and attributes.get("href"):
             self.link = attributes["href"]
             self.out.append("[")
-        elif tag == "img" and attributes.get("src"):
-            self.out.append("\n\n" + self.images.ref(attributes["src"],
-                                                     attributes.get("alt", ""),
-                                                     self.base_dir) + "\n\n")
+        elif tag == "img" and (attributes.get("src") or attributes.get("data-src")):
+            # A paywalled article often lazy-loads its figures, so the real file
+            # is in data-src and src holds a placeholder
+            source = attributes.get("data-src") or attributes["src"]
+            self.out.append("\n\n" + self.images.ref(source,
+                                                     attributes.get("alt") or "",
+                                                     self.base_dir,
+                                                     self.base_url) + "\n\n")
 
     def handle_endtag(self, tag):
         if tag in SKIPPED_TAGS:
@@ -474,6 +487,164 @@ def download_local(path, outdir):
     write_bundle(outdir, body, meta, images)
 
 
+# --- A page behind a paywall, via a copied curl command ----------------------
+
+# What a browser's "Copy as cURL" puts in the command and we know how to honour.
+# Anything else is dropped rather than passed through, so a pasted command can
+# only ever perform the request it describes: nothing reaches a shell, and no
+# flag that writes files, uploads them or reads a config can survive.
+CURL_VALUE_FLAGS = {
+    "-H": "-H", "--header": "-H",
+    "-b": "-b", "--cookie": "-b",
+    "-X": "-X", "--request": "-X",
+    "-d": "--data-raw", "--data": "--data-raw", "--data-raw": "--data-raw",
+    "--data-binary": "--data-binary", "--data-urlencode": "--data-urlencode",
+    "-u": "-u", "--user": "-u",
+    "-A": "-A", "--user-agent": "-A",
+    "-e": "-e", "--referer": "-e",
+    "--url": None,          # the URL, given by flag rather than positionally
+}
+CURL_BARE_FLAGS = {"--compressed", "-L", "--location", "--globoff", "-g"}
+
+ANSI_C = re.compile(r"\$'((?:[^'\\]|\\.)*)'")
+ANSI_ESCAPES = {"n": "\n", "r": "\r", "t": "\t", "\\": "\\", "'": "'", '"': '"'}
+
+
+def _decode_ansi_c(body):
+    """Decode the $'...' quoting a browser uses when a header value needs escapes."""
+    out, i = [], 0
+    while i < len(body):
+        char = body[i]
+        if char == "\\" and i + 1 < len(body):
+            nxt = body[i + 1]
+            if nxt in ANSI_ESCAPES:
+                out.append(ANSI_ESCAPES[nxt])
+                i += 2
+                continue
+            if nxt == "x" and re.match(r"[0-9a-fA-F]{2}", body[i + 2:i + 4]):
+                out.append(chr(int(body[i + 2:i + 4], 16)))
+                i += 4
+                continue
+            if nxt == "u" and re.match(r"[0-9a-fA-F]{4}", body[i + 2:i + 6]):
+                out.append(chr(int(body[i + 2:i + 6], 16)))
+                i += 6
+                continue
+        out.append(char)
+        i += 1
+    return "".join(out)
+
+
+def parse_curl(text):
+    """Read a copied curl command into the request it describes.
+
+    shlex knows ordinary shell quoting but not $'...', so those are lifted out
+    first and put back afterwards, by way of a placeholder no shell metacharacter
+    can appear in.
+    """
+    import shlex
+
+    stashed = []
+
+    def stash(match):
+        stashed.append(_decode_ansi_c(match.group(1)))
+        return "\x00ANSIC%d\x00" % (len(stashed) - 1)
+
+    try:
+        tokens = shlex.split(ANSI_C.sub(stash, text))
+    except ValueError as exc:
+        die("could not read that as a shell command (%s) — copy it again with "
+            '"Copy as cURL", not the Windows or cmd variant' % exc)
+
+    def restore(token):
+        return re.sub(r"\x00ANSIC(\d+)\x00", lambda m: stashed[int(m.group(1))], token)
+
+    tokens = [restore(t) for t in tokens if t.strip()]
+    if not tokens or os.path.basename(tokens[0]) != "curl":
+        die("that does not start with `curl` — paste the whole command from "
+            '"Copy as cURL"')
+
+    spec = {"url": "", "args": [], "dropped": []}
+    i = 1
+    while i < len(tokens):
+        token = tokens[i]
+        if token in CURL_VALUE_FLAGS:
+            value = tokens[i + 1] if i + 1 < len(tokens) else ""
+            canonical = CURL_VALUE_FLAGS[token]
+            if canonical is None:
+                spec["url"] = value
+            else:
+                spec["args"] += [canonical, value]
+            i += 2
+            continue
+        if token in CURL_BARE_FLAGS:
+            spec["args"].append(token)
+            i += 1
+            continue
+        # The URL is whatever looks like one, so an unknown flag's value can't be
+        # mistaken for it
+        if re.match(r"^https?://", token):
+            spec["url"] = spec["url"] or token
+        elif token.startswith("-"):
+            spec["dropped"].append(token)
+        i += 1
+
+    if not spec["url"]:
+        die("found no http(s) URL in that curl command")
+    return spec
+
+
+def curl_bytes(spec, url):
+    """Run the described request against one URL and hand back the body."""
+    import subprocess
+
+    if not shutil.which("curl"):
+        die("curl is not installed")
+    argv = ["curl", "--silent", "--show-error", "--fail", "--location",
+            "--max-time", str(TIMEOUT), url] + spec["args"]
+    result = subprocess.run(argv, capture_output=True)
+    if result.returncode != 0:
+        raise urllib.error.URLError(
+            result.stderr.decode("utf-8", "replace").strip() or
+            "curl exited %d" % result.returncode)
+    return result.stdout
+
+
+def download_curl(path, outdir):
+    with open(path, encoding="utf-8") as handle:
+        spec = parse_curl(handle.read())
+    if spec["dropped"]:
+        note("Ignoring flags that don't affect the request: %s"
+             % " ".join(sorted(set(spec["dropped"]))))
+
+    note("Fetching %s with your session..." % spec["url"])
+    try:
+        raw = curl_bytes(spec, spec["url"]).decode("utf-8", "replace")
+    except urllib.error.URLError as exc:
+        die("the request failed — %s" % exc.reason if hasattr(exc, "reason") else str(exc))
+    if not raw.strip():
+        die("the request came back empty")
+
+    page_host = urllib.parse.urlparse(spec["url"]).netloc
+
+    def get_image(url):
+        # Your session headers go back to the site they came from and nowhere
+        # else: a third-party CDN has no business receiving your cookies
+        if urllib.parse.urlparse(url).netloc == page_host:
+            return curl_bytes(spec, url)
+        return fetch(url, binary=True)
+
+    os.makedirs(outdir, exist_ok=True)
+    with open(os.path.join(outdir, "raw.html"), "w", encoding="utf-8") as handle:
+        handle.write(raw)
+
+    images = Images(outdir, fetcher=get_image)
+    parser = HtmlToMarkdown(images, base_dir=None, base_url=spec["url"])
+    parser.feed(raw)
+    meta = {"kind": "paywalled-page", "title": parser.title, "url": spec["url"],
+            "author": "", "handle": "", "date": "", "saved_from": ""}
+    write_bundle(outdir, parser.markdown(), meta, images)
+
+
 def main():
     if len(sys.argv) != 4:
         sys.exit(__doc__.strip())
@@ -482,6 +653,8 @@ def main():
         download_x(source, outdir)
     elif command == "local":
         download_local(source, outdir)
+    elif command == "curl":
+        download_curl(source, outdir)
     else:
         die("unknown subcommand: %s" % command)
 

@@ -52,6 +52,11 @@ it becomes, drafts each one, and applies what you accept. Every model step after
 - `bundle.py x <url> <dir>` — an X/Twitter post or Article via the FxTwitter API, which reaches X's
   guest endpoints for us; x.com answers unauthenticated fetchers with HTTP 402
 - `bundle.py local <path> <dir>` — a page saved by hand, markdown or complete HTML, file or folder
+- `bundle.py curl <file> <dir>` — a paywalled page, where `<file>` holds a command copied with dev
+  tools' "Copy as cURL". The command is parsed, never executed by a shell: only the flags that
+  describe the request survive, and the session headers are replayed to the article's own host and
+  nowhere else. Relative image links resolve against the page URL, and `data-src` wins over `src`
+  so a lazy-loaded figure downloads the real file rather than its placeholder
 
 `post.md` is written last, so its presence marks a finished bundle — which is what makes a bundle
 directory reusable as a cache.
@@ -61,8 +66,8 @@ folds the descriptions into the source text as figures, so the tool-less steps d
 what an image says. A draft keeps a figure by copying its markdown link; at apply time
 `helpers.py wire-images` copies those files into the note's `images/` folder and rewrites the links.
 
-**Fallbacks**, when the download fails: paste the text, or save the page yourself and point at it
-with `--from <path>`.
+**Fallbacks**, when the download fails: paste a curl command with `--curl`, paste the text, or save
+the page yourself and point at it with `--from <path>`.
 
 **Dependencies**: `gum`, `claude`, `jq`, `python3` (`yt-dlp` for YouTube sources, `glow` optional
 for nicer draft review).
@@ -81,6 +86,7 @@ When creating git commits in this repository:
 ```bash
 ./bin/wiki                              # Interactive menu (requires gum)
 ./bin/wiki add <url>                    # Fetch a source and file it into the wiki
+./bin/wiki add --curl                   # Fetch a paywalled page with your browser's own session
 ./bin/wiki add --text <url>             # Paste the text yourself, for anything unfetchable
 ./bin/wiki add --from <path> <url>      # Read a page you saved: markdown or complete HTML
 

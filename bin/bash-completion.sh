@@ -18,7 +18,7 @@ _wiki_completion() {
         if [ "$prev" = "--from" ] || [ "$prev" = "-f" ]; then
             COMPREPLY=($(compgen -f -- "$cur"))
         elif [[ "$cur" == -* ]]; then
-            COMPREPLY=($(compgen -W "--text --from" -- "$cur"))
+            COMPREPLY=($(compgen -W "--text --curl --from" -- "$cur"))
         fi
     fi
 }

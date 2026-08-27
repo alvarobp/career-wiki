@@ -46,6 +46,12 @@ Accept any form of input:
   carry as much as the words do.
 - **A page saved by hand**: `python3 bin/bundle.py local <path> tmp/bundles/<slug>` takes markdown
   or complete HTML, a file or the folder a browser saved it into, and produces the same shape.
+- **Paywalled articles**: WebFetch sees the paywall, not the article — the session is in the user's
+  browser cookies. Ask them for a command copied with dev tools' "Copy as cURL" (Network → reload →
+  right-click the document request → Copy → Copy as cURL), save it to a file, and run
+  `python3 bin/bundle.py curl <file> tmp/bundles/<slug>`. That replays their session and produces
+  the same bundle shape, images included. Never paste such a command into Bash yourself — the
+  subcommand parses it instead of executing it, which is the point.
 - **YouTube videos**: `bin/download-youtube-transcript.sh <url> tmp/transcript.txt` pulls the
   captions; the watch page itself has nothing fetchable on it.
 - **Text/quotes**: Use directly as provided
@@ -208,7 +214,8 @@ say which note is the hub.
 
 ## The scripted path
 
-`bin/wiki-add <url>` runs this whole workflow non-interactively with a review step at each stage —
+`bin/wiki-add <url>` (or `bin/wiki-add --curl` for a paywalled page) runs this whole workflow with
+a review step at each stage —
 bundle the source, describe its images, plan the notes, steer the plan, draft, review each draft,
 apply. Prefer it when the user just hands over a URL; work through this skill by hand when the
 source is something the script cannot fetch, or when the user wants to discuss as you go.

@@ -40,10 +40,11 @@ view_in_pager() {
     fi
 }
 
-USAGE="Usage: wiki-add [--text | --from <path>] <url>"
+USAGE="Usage: wiki-add [--text | --curl | --from <path>] [<url>]"
 
 URL=""
 TEXT_MODE=0
+CURL_MODE=0
 ARTICLE_TEXT=""
 FROM_PATH=""
 
@@ -51,6 +52,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --text|-t)
             TEXT_MODE=1
+            shift
+            ;;
+        --curl|-c)
+            CURL_MODE=1
             shift
             ;;
         --from|-f)
@@ -83,7 +88,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ -z "$URL" ]; then
+# A curl command carries the URL inside it, so it is the one mode that doesn't
+# need one on the command line
+if [ -z "$URL" ] && [ "$CURL_MODE" -eq 0 ]; then
     echo "$USAGE" >&2
     exit 1
 fi
@@ -151,8 +158,51 @@ load_saved_page() {
     return 1
 }
 
+# A paywalled article is readable in the browser and nowhere else: the session is
+# in the cookies, and the only place those exist is that browser. "Copy as cURL"
+# in the network panel hands over the whole request — cookies, headers and all —
+# so pasting it here fetches the page exactly as the browser saw it, images
+# included. Nothing in the paste reaches a shell; bundle.py honours only the
+# flags that describe the request and drops the rest.
+request_curl_command() {
+    echo "$1"
+    cat <<'EOF'
+
+In the browser, open the article, then:
+  DevTools -> Network -> reload -> right-click the document request
+  -> Copy -> Copy as cURL
+
+Paste it below and press Ctrl+D.
+EOF
+    echo
+    gum write --header "curl command (Ctrl+D to finish)" --width 120 --height 25 \
+        > "$WORKDIR/curl.txt"
+    [ -s "$WORKDIR/curl.txt" ]
+}
+
+load_curl_page() {
+    local dir
+    dir=$(bundle_path "curl-$(head -c 2000 "$WORKDIR/curl.txt" | grep -o 'https\?://[^ '"'"'"]*' | head -1)")
+    rm -rf "$dir"
+    if python3 "$SCRIPT_DIR/bundle.py" curl "$WORKDIR/curl.txt" "$dir" && use_bundle "$dir"; then
+        # The command knows which page it asks for, so the caller needn't repeat it
+        [ -n "$URL" ] || URL=$(jq -r '.url // ""' "$dir/meta.json")
+        return 0
+    fi
+    rm -rf "$dir"
+    return 1
+}
+
 if [ -n "$FROM_PATH" ]; then
     load_saved_page "$FROM_PATH" || exit 1
+fi
+
+if [ "$CURL_MODE" -eq 1 ]; then
+    request_curl_command "Adding a paywalled page using your browser's own session." || {
+        echo "No curl command provided." >&2
+        exit 1
+    }
+    load_curl_page || exit 1
 fi
 
 # x.com answers unauthenticated fetchers with HTTP 402, so the fetch step comes
@@ -171,7 +221,8 @@ if [ -z "$BUNDLE_DIR" ] && [ "$TEXT_MODE" -eq 0 ] && is_x_url "$URL"; then
         echo
         echo "Couldn't download that post automatically."
         CHOICE=$(gum choose --header "How do you want to give it to me instead?" \
-            "Paste the text" "Point me at a page I saved myself" "Give up") || CHOICE="Give up"
+            "Paste the text" "Paste a curl command from dev tools" \
+            "Point me at a page I saved myself" "Give up") || CHOICE="Give up"
         case "$CHOICE" in
             "Paste the text")
                 if ! request_manual_text "Include any thread replies worth keeping." \
@@ -180,6 +231,10 @@ if [ -z "$BUNDLE_DIR" ] && [ "$TEXT_MODE" -eq 0 ] && is_x_url "$URL"; then
                     exit 1
                 fi
                 TEXT_MODE=1
+                ;;
+            "Paste a curl"*)
+                request_curl_command "Fetching it with your browser's own session instead." \
+                    && load_curl_page || exit 1
                 ;;
             "Point me at"*)
                 echo "Save the page from your browser — 'Webpage, Complete' for HTML, or a markdown"
@@ -339,16 +394,53 @@ PROMPT_EOF
 
     if FETCH_PROBLEM=$(unfetchable_reason "$SOURCE_CONTENT"); then
         echo
+        echo "That doesn't look like the article — $FETCH_PROBLEM."
         echo "What came back:"
         printf '  %s\n' "${SOURCE_CONTENT:0:400}"
         echo
-        if ! request_manual_text "That doesn't look like the article — $FETCH_PROBLEM." \
-                                 "Article text (Ctrl+D to finish)"; then
-            echo "Error: could not obtain any content for $URL" >&2
-            exit 1
-        fi
-        SOURCE_CONTENT="$ARTICLE_TEXT"
+        # A paywall or a login wall lands here, and the curl route is the only one
+        # of these that gets the real page rather than a copy of it
+        CHOICE=$(gum choose --header "How do you want to give it to me instead?" \
+            "Paste a curl command from dev tools" "Paste the text" \
+            "Point me at a page I saved myself" "Give up") || CHOICE="Give up"
+        case "$CHOICE" in
+            "Paste a curl"*)
+                request_curl_command "Fetching it with your browser's own session instead." \
+                    && load_curl_page || exit 1
+                # Drop what the failed fetch returned; the bundle is the source now
+                SOURCE_CONTENT=""
+                ;;
+            "Paste the text")
+                if ! request_manual_text "Paste the article body." \
+                                         "Article text (Ctrl+D to finish)"; then
+                    echo "Error: could not obtain any content for $URL" >&2
+                    exit 1
+                fi
+                SOURCE_CONTENT="$ARTICLE_TEXT"
+                ;;
+            "Point me at"*)
+                echo "Save the page from your browser — 'Webpage, Complete' for HTML, or a markdown"
+                echo "export — then tell me where it landed. A folder works too."
+                SAVED=$(gum input --width 100 \
+                    --placeholder "/path/to/page.html, or the folder it was saved into") || SAVED=""
+                load_saved_page "$SAVED" || exit 1
+                SOURCE_CONTENT=""
+                ;;
+            *)
+                echo "Error: could not obtain any content for $URL" >&2
+                exit 1
+                ;;
+        esac
     fi
+fi
+
+# The curl and saved-page routes above produce a bundle, which is read the same
+# way as one downloaded up front — figures and all
+if [ -n "$BUNDLE_DIR" ] && [ -z "$SOURCE_CONTENT" ]; then
+    if [ -d "$BUNDLE_DIR/images" ] && ! describe_bundle_images; then
+        echo "Couldn't describe the images — carrying on with the text and the image links."
+    fi
+    SOURCE_CONTENT=$(python3 "$HELPERS" fold-figures "$BUNDLE_DIR/post.md" "$WORKDIR/captions.json")
 fi
 
 if [ -z "$SOURCE_CONTENT" ]; then

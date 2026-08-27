@@ -54,12 +54,26 @@ drafts each one, and applies what you accept.
 ```bash
 wiki                              # interactive menu
 wiki add <url>                    # fetch a source and file it into the wiki
+wiki add --curl                   # fetch a paywalled page with your browser's own session
 wiki add --text <url>             # paste the text yourself, for anything unfetchable
 wiki add --from <path> <url>      # read a page you saved: markdown or complete HTML
 ```
 
 X posts, X Articles and YouTube videos are downloaded whole, images and captions included; other
-URLs are fetched. When a download fails you are offered the paste and saved-page routes instead.
+URLs are fetched. When a fetch fails you are offered the other routes instead.
+
+### Paywalled articles
+
+An article you are subscribed to is readable in your browser and nowhere else — the session lives in
+that browser's cookies. `wiki add --curl` borrows it: in dev tools, **Network → reload →
+right-click the document request → Copy → Copy as cURL**, then paste the command when asked. The
+page is fetched exactly as the browser saw it, images included, and the URL comes from the command
+so you needn't give it separately.
+
+Nothing in the paste reaches a shell. The command is parsed, and only the flags that describe the
+request — headers, cookies, method, body — are honoured; anything else is dropped. Your session
+headers are replayed to the article's own host and to no other, so an image on a third-party CDN is
+fetched anonymously.
 
 ### Installation
 

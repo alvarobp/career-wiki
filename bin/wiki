@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 add_source() {
     if [ $# -eq 0 ]; then
-        echo "Usage: wiki add [--text | --from <path>] <url>"
+        echo "Usage: wiki add [--text | --curl | --from <path>] [<url>]"
         exit 1
     fi
     "$SCRIPT_DIR/wiki-add" "$@"
@@ -27,6 +27,7 @@ show_menu() {
 
     choice=$(gum choose --cursor.foreground 208 --header "What are you adding?" \
         "Add a source by URL" \
+        "Add a page behind a paywall" \
         "Add a source by pasting its text" \
         "Add a page I saved myself" \
         "Exit") || choice="Exit"
@@ -35,6 +36,10 @@ show_menu() {
         "Add a source by URL")
             url=$(gum input --width 100 --placeholder "https://...")
             [ -n "$url" ] && add_source "$url"
+            ;;
+        "Add a page behind a paywall")
+            # The curl command names the page itself, so nothing else is needed
+            add_source --curl
             ;;
         "Add a source by pasting its text")
             url=$(gum input --width 100 --placeholder "URL it came from (for the Source line)")
@@ -61,9 +66,12 @@ case "$1" in
         show_menu
         ;;
     *)
-        echo "Usage: wiki [add [--text | --from <path>] <url>]"
+        echo "Usage: wiki [add [--text | --curl | --from <path>] [<url>]]"
         echo "  add <url>                 - Fetch a source and file it into the wiki"
         echo "                              (X posts and YouTube videos are downloaded whole)"
+        echo "  add --curl                - Fetch a paywalled page with your browser's own"
+        echo "                              session: paste a command copied with dev tools'"
+        echo "                              'Copy as cURL'"
         echo "  add --text <url>          - Paste the text yourself, for anything unfetchable"
         echo "  add --from <path> <url>   - Read a page you saved: markdown or complete HTML,"
         echo "                              a file or the folder it was saved into"
