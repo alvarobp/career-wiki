@@ -1,0 +1,73 @@
+#!/bin/bash
+# Command-line entry point for the career wiki.
+# Alias it: alias wiki='~/personal/code/career-wiki/bin/wiki'
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+add_source() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: wiki add [--text | --from <path>] <url>"
+        exit 1
+    fi
+    "$SCRIPT_DIR/wiki-add" "$@"
+}
+
+# The interactive menu is a convenience, not the interface: everything it does is
+# reachable as a subcommand, so a missing gum only costs the menu.
+show_menu() {
+    local choice url
+
+    if ! command -v gum &> /dev/null; then
+        echo -e "\033[31mError: gum is not installed or not available in PATH\033[0m"
+        echo "Install it from https://github.com/charmbracelet/gum, or use: wiki add <url>"
+        exit 1
+    fi
+
+    choice=$(gum choose --cursor.foreground 208 --header "What are you adding?" \
+        "Add a source by URL" \
+        "Add a source by pasting its text" \
+        "Add a page I saved myself" \
+        "Exit") || choice="Exit"
+
+    case "$choice" in
+        "Add a source by URL")
+            url=$(gum input --width 100 --placeholder "https://...")
+            [ -n "$url" ] && add_source "$url"
+            ;;
+        "Add a source by pasting its text")
+            url=$(gum input --width 100 --placeholder "URL it came from (for the Source line)")
+            [ -n "$url" ] && add_source --text "$url"
+            ;;
+        "Add a page I saved myself")
+            url=$(gum input --width 100 --placeholder "URL it came from (for the Source line)")
+            [ -n "$url" ] || return 0
+            path=$(gum input --width 100 --placeholder "/path/to/page.html, or the folder it saved into")
+            [ -n "$path" ] && add_source --from "$path" "$url"
+            ;;
+        *)
+            echo "Goodbye!"
+            ;;
+    esac
+}
+
+case "$1" in
+    "add")
+        shift
+        add_source "$@"
+        ;;
+    "")
+        show_menu
+        ;;
+    *)
+        echo "Usage: wiki [add [--text | --from <path>] <url>]"
+        echo "  add <url>                 - Fetch a source and file it into the wiki"
+        echo "                              (X posts and YouTube videos are downloaded whole)"
+        echo "  add --text <url>          - Paste the text yourself, for anything unfetchable"
+        echo "  add --from <path> <url>   - Read a page you saved: markdown or complete HTML,"
+        echo "                              a file or the folder it was saved into"
+        echo "  (no args)                 - Show the interactive menu"
+        exit 1
+        ;;
+esac

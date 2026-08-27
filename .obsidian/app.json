@@ -1,5 +1,7 @@
 {
   "userIgnoreFilters": [
-    "tmp/"
+    "tmp/",
+    "bin/",
+    ".claude/"
   ]
 }

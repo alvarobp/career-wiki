@@ -1,0 +1,1049 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# The vault is the repository: sections are the top-level folders, and bin/ and
+# .claude/ are the only things in it that are not notes.
+WIKI_DIR="$REPO_ROOT"
+NON_WIKI='^\(bin\|\.claude\|\.git\|\.obsidian\|tmp\)\(/\|$\)'
+HELPERS="$SCRIPT_DIR/helpers.py"
+
+# Matches youtube.com/watch?v=... and youtu.be/... URLs
+is_youtube_url() {
+    [[ "$1" == *youtube.com/watch* || "$1" == *youtu.be/* ]]
+}
+
+# Matches x.com / twitter.com URLs, including the mobile and www hosts
+is_x_url() {
+    [[ "$1" =~ ^(https?://)?(www\.|mobile\.)?(x|twitter)\.com/ ]]
+}
+
+# Check prerequisites
+for cmd in gum claude jq python3; do
+    if ! command -v "$cmd" &> /dev/null; then
+        echo "Error: $cmd is not installed or not available in PATH" >&2
+        exit 1
+    fi
+done
+
+WORKDIR=$(mktemp -d -t wiki-add-XXXXXX)
+trap 'rm -rf "$WORKDIR"' EXIT
+
+# Render markdown through the configured pager so drafts can be read at length.
+# glow emits ANSI, hence -R on the default.
+view_in_pager() {
+    if command -v glow >/dev/null 2>&1; then
+        glow "$1" | ${PAGER:-less -R}
+    else
+        ${PAGER:-less -R} "$1"
+    fi
+}
+
+USAGE="Usage: wiki-add [--text | --from <path>] <url>"
+
+URL=""
+TEXT_MODE=0
+ARTICLE_TEXT=""
+FROM_PATH=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --text|-t)
+            TEXT_MODE=1
+            shift
+            ;;
+        --from|-f)
+            FROM_PATH="${2:-}"
+            if [ -z "$FROM_PATH" ]; then
+                echo "--from needs the path to a page you saved" >&2
+                exit 1
+            fi
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            echo "$USAGE" >&2
+            exit 1
+            ;;
+        *)
+            if [ -z "$URL" ]; then
+                URL="$1"
+            else
+                echo "Unexpected argument: $1" >&2
+                echo "$USAGE" >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+if [ -z "$URL" ]; then
+    echo "$USAGE" >&2
+    exit 1
+fi
+
+# Ask for the source body by hand. $1 says why we're asking, $2 heads the editor.
+# Sets ARTICLE_TEXT, and returns non-zero if nothing was pasted.
+request_manual_text() {
+    echo "$1"
+    echo "Paste the text below. Press Ctrl+D when done."
+    echo
+    ARTICLE_TEXT=$(gum write --header "$2" --width 120 --height 40)
+    [ -n "$ARTICLE_TEXT" ]
+}
+
+if [ "$TEXT_MODE" -eq 1 ]; then
+    if ! request_manual_text "Adding $URL from pasted text (leave it empty to fetch the URL instead)." \
+                             "Article text (Ctrl+D to finish)"; then
+        echo "No text provided — falling back to fetching content from the URL."
+        TEXT_MODE=0
+    fi
+fi
+
+# A bundle is a downloaded copy of a source: its text as post.md, with links into
+# an images/ folder holding every picture. Sources whose images carry as much as
+# their words — an X Article of annotated slides, say — only survive the trip
+# into the wiki as one of these. Bundles live under tmp/bundles, which is
+# gitignored, and are reused rather than refetched.
+BUNDLE_ROOT="$REPO_ROOT/tmp/bundles"
+BUNDLE_DIR=""
+
+bundle_path() {
+    mkdir -p "$BUNDLE_ROOT"
+    local slug
+    slug=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' \
+        | sed -e 's|https\{0,1\}://||' -e 's|[^a-z0-9]\{1,\}|-|g' -e 's|^-||' -e 's|-$||')
+    echo "$BUNDLE_ROOT/${slug:0:80}"
+}
+
+# bundle.py writes post.md only once the images are in, so its presence is what
+# marks a directory as a finished bundle rather than an abandoned attempt.
+use_bundle() {
+    [ -s "$1/post.md" ] || return 1
+    BUNDLE_DIR="$1"
+    echo "Source and its images are in $BUNDLE_DIR"
+    return 0
+}
+
+# Ingest a page saved by hand — markdown or complete HTML, file or folder
+load_saved_page() {
+    local source="$1" dir
+    # Paths dragged into a terminal arrive quoted, and ~ never expands here
+    source="${source%\"}"; source="${source#\"}"
+    source="${source%\'}"; source="${source#\'}"
+    source="${source/#\~/$HOME}"
+    if [ ! -e "$source" ]; then
+        echo "Nothing at $source" >&2
+        return 1
+    fi
+    dir=$(bundle_path "saved-$(basename "$source")")
+    rm -rf "$dir"
+    if python3 "$SCRIPT_DIR/bundle.py" local "$source" "$dir" && use_bundle "$dir"; then
+        return 0
+    fi
+    echo "Could not read a page out of $source" >&2
+    return 1
+}
+
+if [ -n "$FROM_PATH" ]; then
+    load_saved_page "$FROM_PATH" || exit 1
+fi
+
+# x.com answers unauthenticated fetchers with HTTP 402, so the fetch step comes
+# back with an apology instead of the post — which then quietly plans into
+# nothing. FxTwitter reaches X's own guest endpoints and hands back the post,
+# Articles included, with every image, so try that before asking for a paste.
+if [ -z "$BUNDLE_DIR" ] && [ "$TEXT_MODE" -eq 0 ] && is_x_url "$URL"; then
+    XBUNDLE=$(bundle_path "$URL")
+    if ! use_bundle "$XBUNDLE"; then
+        rm -rf "$XBUNDLE"
+        python3 "$SCRIPT_DIR/bundle.py" x "$URL" "$XBUNDLE" || rm -rf "$XBUNDLE"
+        use_bundle "$XBUNDLE" || true
+    fi
+
+    if [ -z "$BUNDLE_DIR" ]; then
+        echo
+        echo "Couldn't download that post automatically."
+        CHOICE=$(gum choose --header "How do you want to give it to me instead?" \
+            "Paste the text" "Point me at a page I saved myself" "Give up") || CHOICE="Give up"
+        case "$CHOICE" in
+            "Paste the text")
+                if ! request_manual_text "Include any thread replies worth keeping." \
+                                         "Post text (Ctrl+D to finish)"; then
+                    echo "Error: no text provided for $URL." >&2
+                    exit 1
+                fi
+                TEXT_MODE=1
+                ;;
+            "Point me at"*)
+                echo "Save the page from your browser — 'Webpage, Complete' for HTML, or a markdown"
+                echo "export — then tell me where it landed. A folder works too."
+                SAVED=$(gum input --width 100 \
+                    --placeholder "/path/to/page.html, or the folder it was saved into") || SAVED=""
+                load_saved_page "$SAVED" || exit 1
+                ;;
+            *)
+                echo "Nothing to add." >&2
+                exit 1
+                ;;
+        esac
+    fi
+fi
+
+# YouTube URLs have no fetchable article body — WebFetch only sees the watch
+# page, not the captions. Pull the transcript instead and treat it as the
+# article text, so the rest of the flow works like any other source.
+if [ -z "$BUNDLE_DIR" ] && [ "$TEXT_MODE" -eq 0 ] && is_youtube_url "$URL"; then
+    if ! command -v yt-dlp &> /dev/null; then
+        echo "Error: yt-dlp is required to add YouTube videos but is not installed" >&2
+        exit 1
+    fi
+    # Catch truncated IDs early — yt-dlp's clear error is otherwise swallowed by
+    # ensure_transcript and surfaces as a confusing "transcript is empty".
+    vid=$(echo "$URL" | sed -n -e 's/.*[?&]v=\([^&]*\).*/\1/p' -e 's/.*youtu\.be\/\([^?]*\).*/\1/p')
+    if ! [[ "$vid" =~ ^[A-Za-z0-9_-]{11}$ ]]; then
+        echo "Error: '$vid' is not a valid 11-character YouTube video ID — the URL looks truncated or malformed." >&2
+        exit 1
+    fi
+    echo "Detected YouTube URL — fetching transcript..."
+    # shellcheck source=./ensure-transcript.sh
+    source "$SCRIPT_DIR/ensure-transcript.sh"
+    # Transcripts and their metadata are cached in the gitignored tmp/
+    pushd "$REPO_ROOT" > /dev/null
+    ensure_transcript "$URL"
+    ARTICLE_TEXT=$(cat "$TRANSCRIPT_FILE")
+
+    # Fetch video metadata for the source line, cached next to the transcript
+    META_FILE="tmp/meta-${VIDEO_ID}.txt"
+    if [ ! -s "$META_FILE" ]; then
+        yt-dlp --skip-download --no-warnings \
+            --print "%(title)s	%(uploader)s	%(upload_date>%Y-%m-%d)s" \
+            "$URL" > "$META_FILE" 2>/dev/null || true
+    fi
+    # read returns non-zero at EOF (e.g. empty file on fetch failure); don't let set -e abort
+    IFS=$'\t' read -r YT_TITLE YT_UPLOADER YT_DATE < "$META_FILE" || true
+    popd > /dev/null
+    TEXT_MODE=1
+fi
+
+# --- Step 1: Get the source content ---
+
+# A blocked fetch does not look like a failure from here: claude exits 0 and hands
+# back an apology, which sails past the empty check and plans into an empty plan.
+# Echo why the content looks like a non-answer, so the caller can ask for a paste
+# instead of the run quietly doing nothing.
+unfetchable_reason() {
+    local content="$1" reason opening
+    if [[ "$content" == FETCH_FAILED:* ]]; then
+        reason="${content#FETCH_FAILED:}"
+        reason="${reason%%$'\n'*}"
+        printf '%s\n' "${reason# }"
+        return 0
+    fi
+    if [ "${#content}" -lt 200 ]; then
+        printf 'only %s characters came back — too little to be the article\n' "${#content}"
+        return 0
+    fi
+    # The sentinel is only as good as the model's obedience, so also catch what a
+    # failure looks like: an excuse in the opening lines, and short, since an
+    # apology runs a paragraph at most. Length is what keeps a genuine article
+    # about paywalls and captchas from tripping this.
+    opening=${content:0:400}
+    if [ "${#content}" -lt 1500 ] &&
+       grep -qiE "(could ?n.t|can ?not|can.t|unable to|failed to) (retrieve|fetch|access|get|read|load)|HTTP [45][0-9][0-9]|paywall|(log|sign) ?in (wall|required|to )|captcha|verify you are|enable javascript" <<< "$opening"; then
+        printf 'it answered with an explanation rather than article text\n'
+        return 0
+    fi
+    return 1
+}
+
+# One batch of images -> one JSON file of descriptions
+describe_batch() {
+    local files="$1" out="$2" prompt
+
+    read -r -d '' prompt <<'PROMPT_EOF' || true
+These files are figures from a source I am about to summarise into a wiki note. Read every one:
+
+__FILES__
+
+For each figure, describe it well enough that someone who cannot see it could use it as source
+material: transcribe the words, labels and numbers it contains, and say what it shows or claims.
+Then judge whether it carries an idea of its own — a diagram, a chart, a table, a screenshot of
+data — or is decorative, like a title card, a stock photo or a portrait.
+
+Respond with ONLY a valid JSON object, no markdown fences, no other text:
+{"figures": [{"file": "01-name.png", "caption": "short caption", "description": "what it shows, including the text in it", "substantive": true}]}
+
+Every file above must appear exactly once, named by its basename.
+PROMPT_EOF
+    prompt="${prompt//__FILES__/$files}"
+
+    echo "$prompt" | claude -p --allowedTools "Read" \
+        | python3 "$HELPERS" extract-json > "$out" 2>/dev/null
+}
+
+# Describe a bundle's images once, here, and fold the descriptions into the source
+# text. Everything after this point runs without tools and so cannot look at an
+# image; describing them up front is what turns a wall of annotated slides into
+# material the planner and the drafters can actually weigh.
+# Batched, because one call reading two dozen images takes long enough to feel
+# like the script has hung, and the batches have nothing to say to each other.
+BATCH_SIZE=6
+
+describe_bundle_images() {
+    local -a images=() batches=()
+    local index=0 batch=0
+    while IFS= read -r file; do images+=("$file"); done < <(find "$BUNDLE_DIR/images" -type f | sort)
+    [ ${#images[@]} -gt 0 ] || return 1
+
+    echo "Describing ${#images[@]} image(s) from the download..."
+    while [ "$index" -lt "${#images[@]}" ]; do
+        describe_batch "$(printf '%s\n' "${images[@]:index:BATCH_SIZE}")" "$WORKDIR/captions-$batch.json" &
+        batches+=("$WORKDIR/captions-$batch.json")
+        index=$((index + BATCH_SIZE))
+        batch=$((batch + 1))
+    done
+    wait || true
+
+    # A batch that came back empty or malformed costs its own figures, not the run
+    local -a described=()
+    for file in "${batches[@]}"; do
+        [ -s "$file" ] && described+=("$file")
+    done
+    [ ${#described[@]} -gt 0 ] || return 1
+    jq -s '{figures: (map(.figures // []) | add)}' "${described[@]}" > "$WORKDIR/captions.json"
+}
+
+if [ -n "$BUNDLE_DIR" ]; then
+    if [ -d "$BUNDLE_DIR/images" ] && ! describe_bundle_images; then
+        echo "Couldn't describe the images — carrying on with the text and the image links."
+    fi
+    SOURCE_CONTENT=$(python3 "$HELPERS" fold-figures "$BUNDLE_DIR/post.md" "$WORKDIR/captions.json")
+elif [ "$TEXT_MODE" -eq 1 ]; then
+    SOURCE_CONTENT="$ARTICLE_TEXT"
+else
+    echo "Fetching content..."
+    read -r -d '' FETCH_PROMPT <<'PROMPT_EOF' || true
+Fetch the content at this URL and output ONLY the raw article text, no commentary: __URL__
+If you cannot retrieve it — an HTTP error, a paywall, a login wall, a bot check, or an
+empty body — output exactly "FETCH_FAILED: <one line saying why>" and nothing else.
+PROMPT_EOF
+    FETCH_PROMPT="${FETCH_PROMPT//__URL__/$URL}"
+    SOURCE_CONTENT=$(echo "$FETCH_PROMPT" | claude -p --allowedTools "WebFetch")
+
+    if FETCH_PROBLEM=$(unfetchable_reason "$SOURCE_CONTENT"); then
+        echo
+        echo "What came back:"
+        printf '  %s\n' "${SOURCE_CONTENT:0:400}"
+        echo
+        if ! request_manual_text "That doesn't look like the article — $FETCH_PROBLEM." \
+                                 "Article text (Ctrl+D to finish)"; then
+            echo "Error: could not obtain any content for $URL" >&2
+            exit 1
+        fi
+        SOURCE_CONTENT="$ARTICLE_TEXT"
+    fi
+fi
+
+if [ -z "$SOURCE_CONTENT" ]; then
+    echo "Error: could not obtain any content for $URL" >&2
+    exit 1
+fi
+
+SOURCE_FILE="$WORKDIR/source.txt"
+printf '%s\n' "$SOURCE_CONTENT" > "$SOURCE_FILE"
+
+# --- Step 2: Plan what this source becomes ---
+
+echo "Analyzing content..."
+
+WIKI_TREE=$(cd "$WIKI_DIR" && find . -type d | sed 's|^\./||' | grep -v '^\.$' \
+    | grep -v "$NON_WIKI" | sort)
+# Existing notes with their titles, so the plan can spot material already covered
+WIKI_FILES=$(cd "$WIKI_DIR" && find . -name '*.md' | sed 's|^\./||' | grep -v "$NON_WIKI" \
+    | sort | while read -r f; do
+    echo "$f — $(head -1 "$f" | sed 's/^# *//')"
+done)
+
+read -r -d '' PLAN_PROMPT <<'PROMPT_EOF' || true
+Here is source material to incorporate into a personal knowledge wiki.
+Source URL: __URL__
+
+--- SOURCE ---
+__CONTENT__
+--- END SOURCE ---
+
+Existing wiki sections (directories, relative to the wiki root):
+__WIKI_TREE__
+
+Existing wiki notes (path — title):
+__WIKI_FILES__
+
+Decide how this source should land in the wiki. One source is not always one note:
+
+- Single topic -> one new note.
+- Several aspects of ONE topic -> still one new note; the aspects become sections. Do not over-split.
+- Several genuinely distinct topics -> one hub note summarising the source, plus one focused note per
+  topic (spokes). Categorise every note independently, on what THAT note is about — spokes often
+  belong in a different category than the hub.
+- Material already covered by an existing note -> merge into that note instead of creating a near-duplicate.
+
+Split a topic into its own note only if it is independently referenceable: someone who never saw this
+source would search for it by name and expect to find a standalone note. Otherwise keep it as a section
+of a larger note. Prefer few notes: most sources are one note, and a hub with more than three or four
+spokes almost always means aspects of a single topic have been split apart rather than distinct topics.
+
+Only propose a merge when the source adds a distinct claim, contradicts what the note says, or supplies
+new evidence for it. Merely being related to the topic is not enough — a merge that only adds a citation
+is not worth making.
+
+Only propose links FROM existing notes TO the new notes; the new notes cross-link each other automatically.
+Links are the easiest thing to over-propose, so the bar is high: propose one only when a reader of the
+EXISTING note is materially under-served without the pointer — the new note contradicts that note,
+changes how it should be read, or is its direct continuation. Sharing a general subject is not enough.
+Propose at most three, and none at all if none clear that bar.
+
+Every action here costs the reader a review. Keep the whole plan under roughly six actions; if you have
+more, you are proposing low-value ones, so keep only the strongest and drop the rest.
+
+Respond with ONLY a valid JSON object, no markdown fences, no other text:
+{
+  "shape": "single|multi-topic|hub-spokes|merge-only",
+  "new_notes": [
+    {"title": "Document Title", "category": "path/relative/to/wiki", "filename": "kebab-case-name",
+     "role": "standalone|hub|spoke", "focus": "one line: what this note covers from the source"}
+  ],
+  "merges": [
+    {"path": "existing/path.md", "what_it_adds": "one line: what this source adds to that note"}
+  ],
+  "links": [
+    {"path": "existing/path.md", "what_it_adds": "one line: which new note to link to and why"}
+  ]
+}
+
+How this wiki is laid out:
+- A section is a folder. Its own page is the note inside it that shares its name —
+  `architecture/architecture.md` is the page for the `architecture` section — and that page
+  carries the list of links to everything in the section.
+- Filenames and folders are kebab-case ASCII, without the .md extension. The note's real title,
+  in its natural capitalisation, lives in the H1 on its first line.
+- A note that is itself a section of several notes goes in a folder of its own name; a plain note
+  is a file in its section's folder.
+- Paths are relative to the wiki root. Never propose a new note at the root: every note belongs to
+  a section.
+- To create a new section, give the new note the category `<new-section>` — its page and its link
+  from the parent section are wired up for you.
+
+Any of the three lists may be empty.
+PROMPT_EOF
+
+PLAN_PROMPT="${PLAN_PROMPT//__URL__/$URL}"
+PLAN_PROMPT="${PLAN_PROMPT//__CONTENT__/$SOURCE_CONTENT}"
+PLAN_PROMPT="${PLAN_PROMPT//__WIKI_TREE__/$WIKI_TREE}"
+PLAN_PROMPT="${PLAN_PROMPT//__WIKI_FILES__/$WIKI_FILES}"
+
+PLAN_RAW=$(echo "$PLAN_PROMPT" | claude -p --tools "")
+PLAN_FILE="$WORKDIR/plan.json"
+if ! echo "$PLAN_RAW" | python3 "$HELPERS" extract-json > "$PLAN_FILE" 2>"$WORKDIR/plan.err"; then
+    echo "Error: failed to get a valid plan from Claude — $(cat "$WORKDIR/plan.err")" >&2
+    echo "Raw output:" >&2
+    echo "$PLAN_RAW" >&2
+    exit 1
+fi
+
+# Flatten the plan into one ordered action list. Merges and links are both scoped
+# edits to existing notes, so they share all the machinery from here on.
+ACTIONS_FILE="$WORKDIR/actions.json"
+load_actions() {
+    if ! jq -e '[ (.new_notes[]? | {type: "new"} + .),
+                  (.merges[]?   | {type: "edit", kind: "merge"} + .),
+                  (.links[]?    | {type: "edit", kind: "link"} + .) ]' \
+            "$PLAN_FILE" > "$ACTIONS_FILE" 2>/dev/null; then
+        echo "The plan is not in the expected format." >&2
+        return 1
+    fi
+    ACTION_COUNT=$(jq 'length' "$ACTIONS_FILE")
+}
+
+load_actions
+if [ "$ACTION_COUNT" -eq 0 ]; then
+    echo "The plan proposed no notes, merges or links for this source. Nothing to do."
+    exit 0
+fi
+
+field() { jq -r ".[$1].$2 // \"\"" "$ACTIONS_FILE"; }
+
+# Target path relative to the wiki root, for either action type
+target_rel() {
+    if [ "$(field "$1" type)" = "new" ]; then
+        echo "$(field "$1" category)/$(field "$1" filename).md"
+    else
+        field "$1" path
+    fi
+}
+
+action_label() {
+    local i="$1" rel role note
+    rel=$(target_rel "$i")
+    if [ "$(field "$i" type)" = "new" ]; then
+        role=$(field "$i" role)
+        note="$rel"
+        [ -f "$WIKI_DIR/$rel" ] && note="$note  (overwrites existing note)"
+        echo "new [$role]  $note"
+    else
+        echo "$(field "$i" kind) edit    $rel"
+    fi
+}
+
+# --- Step 3: Show the plan, steer it, pick what to act on ---
+
+# Columns available inside the plan box: the terminal, less the margin (2+2),
+# border (1+1) and padding (2+2) that show_plan asks gum for. Capped because a
+# very wide box is hard to read, floored so a narrow terminal still gets text.
+box_width() {
+    local cols
+    cols=$(tput cols 2>/dev/null) || cols=80
+    [ "$cols" -gt 0 ] 2>/dev/null || cols=80
+    cols=$((cols - 10))
+    [ "$cols" -gt 100 ] && cols=100
+    [ "$cols" -lt 30 ] && cols=30
+    echo "$cols"
+}
+
+# Append $3 to the lines[] of the caller, wrapped to $2 columns, indented by $1,
+# with continuation lines indented a further $4
+push_wrapped() {
+    local indent="$1" width="$2" text="$3" hang="$4" line
+    while IFS= read -r line; do
+        lines+=("$line")
+    done < <(printf '%s\n' "$text" | python3 "$HELPERS" wrap "$width" "$indent" "$hang")
+}
+
+show_plan() {
+    local i detail width lines=()
+    width=$(box_width)
+    lines=("Plan for this source — shape: $(jq -r '.shape // "unknown"' "$PLAN_FILE")"
+           "$(jq '[.[] | select(.type == "new")] | length' "$ACTIONS_FILE") new note(s), \
+$(jq '[.[] | select(.kind == "merge")] | length' "$ACTIONS_FILE") merge(s), \
+$(jq '[.[] | select(.kind == "link")] | length' "$ACTIONS_FILE") link(s)" "")
+    for i in $(seq 0 $((ACTION_COUNT - 1))); do
+        detail=$(field "$i" focus)
+        [ -z "$detail" ] && detail=$(field "$i" what_it_adds)
+        push_wrapped "  " "$width" "$((i + 1)). $(action_label "$i")" "    "
+        if [ -n "$detail" ]; then
+            push_wrapped "      " "$width" "$detail"
+        fi
+    done
+    echo
+    gum style --border rounded --border-foreground 208 --padding "1 2" --margin "0 2" "${lines[@]}"
+    echo
+}
+
+# gum matches --selected against item text, so these labels must stay comma-free
+select_label() {
+    local kind="new note"
+    [ "$(field "$1" type)" = "edit" ] && kind="$(field "$1" kind) edit"
+    printf '%02d  %-10s %s' "$(($1 + 1))" "$kind" "$(target_rel "$1")"
+}
+
+# Mark every action pending, or only the ones picked from a checklist.
+# Returns non-zero if nothing was picked, so the caller can go back to the menu.
+mark_pending() {
+    local i labels=() all selection line
+    STATUS=()
+    for i in $(seq 0 $((ACTION_COUNT - 1))); do
+        STATUS[i]="dropped"
+    done
+
+    if [ "$1" = "all" ]; then
+        for i in $(seq 0 $((ACTION_COUNT - 1))); do
+            STATUS[i]="pending"
+        done
+        return 0
+    fi
+
+    for i in $(seq 0 $((ACTION_COUNT - 1))); do
+        labels+=("$(select_label "$i")")
+    done
+    all=$(IFS=,; echo "${labels[*]}")
+    selection=$(printf '%s\n' "${labels[@]}" \
+        | gum choose --no-limit --height 20 --selected "$all" \
+            --header "Draft which actions? (space toggles, enter confirms)") || selection=""
+    [ -n "$selection" ] || return 1
+
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        # Labels are numbered from 1; 10# keeps 08/09 from parsing as octal
+        STATUS[10#${line%% *} - 1]="pending"
+    done <<< "$selection"
+}
+
+# Re-plan from written instructions — for steering the shape of the whole plan
+# ("fewer notes", "drop the links", "merge 3 and 4 instead") rather than one draft.
+refine_plan() {
+    local feedback raw
+    feedback=$(gum write --header "How should the plan change? (Ctrl+D when done)" \
+        --placeholder "e.g. no link edits, and fold notes 2 and 3 into one" \
+        --width 100 --height 10)
+    [ -n "$feedback" ] || return 1
+
+    echo "Re-planning..."
+    raw=$(printf '%s\n\nYou previously proposed this plan:\n%s\n\nRevise it as instructed: %s\n\nRespond with ONLY the revised plan, in the same JSON format.\n' \
+        "$PLAN_PROMPT" "$(cat "$PLAN_FILE")" "$feedback" | claude -p --tools "")
+    if ! echo "$raw" | python3 "$HELPERS" extract-json > "$WORKDIR/plan-new.json" 2>/dev/null; then
+        echo "Couldn't parse the revised plan — keeping the previous one." >&2
+        return 1
+    fi
+    cp "$WORKDIR/plan-new.json" "$PLAN_FILE"
+    load_actions
+}
+
+# Same steering, conversationally — the chat edits plan.json in place
+chat_about_plan() {
+    local seed
+    seed="I'm planning how to file a source into my knowledge wiki at $WIKI_DIR. The proposed plan is the JSON at @$PLAN_FILE and the source material is at @$SOURCE_FILE. The schema is {\"shape\":..., \"new_notes\":[{\"title\",\"category\",\"filename\",\"role\",\"focus\"}], \"merges\":[{\"path\",\"what_it_adds\"}], \"links\":[{\"path\",\"what_it_adds\"}]} — categories and paths are relative to $WIKI_DIR, filenames are kebab-case without .md. Discuss the plan with me and rewrite that JSON file in place when I ask, keeping it valid and in the same schema. Do not create or edit any wiki note yet. Start by waiting for my questions."
+    echo "Opening a Claude Code chat about the plan — exit it to come back here."
+    claude "$seed" || true
+    if ! load_actions; then
+        echo "The edited plan couldn't be read — check $PLAN_FILE." >&2
+        return 1
+    fi
+}
+
+while true; do
+    show_plan
+    if [ "$ACTION_COUNT" -eq 0 ]; then
+        echo "The plan is now empty."
+    fi
+
+    PLAN_CHOICE=$(gum choose --header "Plan: $ACTION_COUNT action(s)" \
+        "Draft all $ACTION_COUNT" \
+        "Choose which to draft" \
+        "Refine with instructions" \
+        "Chat about the plan" \
+        "Abort") || PLAN_CHOICE="Abort"
+
+    case "$PLAN_CHOICE" in
+        "Draft all"*)
+            if [ "$ACTION_COUNT" -gt 0 ] && mark_pending all; then break; fi ;;
+        "Choose which to draft")
+            if [ "$ACTION_COUNT" -gt 0 ] && mark_pending some; then break; fi ;;
+        "Refine with instructions")
+            refine_plan || true ;;
+        "Chat about the plan")
+            chat_about_plan || true ;;
+        *)
+            echo "Aborted."
+            exit 0 ;;
+    esac
+done
+
+# --- Step 4: Draft every action ---
+
+# The Source line for YouTube sources, where the page body can't supply it
+SOURCE_NOTE=""
+if [ -n "${YT_UPLOADER:-}" ]; then
+    SOURCE_NOTE="- This is a YouTube video titled \"$YT_TITLE\", uploaded by $YT_UPLOADER"
+    [ -n "${YT_DATE:-}" ] && SOURCE_NOTE="$SOURCE_NOTE on $YT_DATE"
+    SOURCE_NOTE="$SOURCE_NOTE. Use this exact Source line: **Source:** [$YT_TITLE]($URL) - $YT_UPLOADER${YT_DATE:+, $YT_DATE}"
+elif [ -n "$BUNDLE_DIR" ] && [ -s "$BUNDLE_DIR/meta.json" ]; then
+    # The download knows the title, author and date exactly; the body it produced
+    # usually doesn't say them in a form worth guessing from
+    B_TITLE=$(jq -r '.title // ""' "$BUNDLE_DIR/meta.json")
+    B_AUTHOR=$(jq -r '.author // ""' "$BUNDLE_DIR/meta.json")
+    B_DATE=$(jq -r '.date // ""' "$BUNDLE_DIR/meta.json")
+    if [ -n "$B_TITLE" ]; then
+        SOURCE_NOTE="- Use this exact Source line: **Source:** [$B_TITLE]($URL)${B_AUTHOR:+ - $B_AUTHOR}${B_DATE:+, $B_DATE}"
+    fi
+fi
+
+# Figures only exist when the source was downloaded whole; without a bundle there
+# is no image file for a link to resolve to, so the guidance has to stay out.
+FIGURE_NOTE=""
+if [ -n "$BUNDLE_DIR" ]; then
+    read -r -d '' FIGURE_NOTE <<'PROMPT_EOF' || true
+- The source's images appear as figures: an `![Figure N — caption](images/NN-file.png)` link, followed
+  by a `> Figure N: ...` line describing what the image shows. Treat those descriptions as source
+  material like any other part of the text.
+- Keep a figure in the note only when the image itself carries the idea — a diagram, a chart, a table
+  the words cannot replace. Title cards and decorative images never earn a place. To keep one, copy its
+  markdown link verbatim on its own line, without the description line, and add a caption in the alt
+  text. The image file will be copied next to the note. Never write an image link you did not copy.
+PROMPT_EOF
+fi
+
+draft_new_note() {
+    local i="$1" rel siblings="" j sib_rel sib_title
+    rel=$(target_rel "$i")
+
+    # Hand the model the exact relative links, so hub and spokes reference each
+    # other correctly even when they land in different categories
+    for j in $(seq 0 $((ACTION_COUNT - 1))); do
+        [ "$j" = "$i" ] && continue
+        [ "$(field "$j" type)" = "new" ] || continue
+        sib_rel=$(target_rel "$j")
+        sib_title=$(field "$j" title)
+        siblings="$siblings
+- $sib_title ($(field "$j" role)) — link to it as [$sib_title]($(python3 "$HELPERS" relpath "$sib_rel" "$rel"))"
+    done
+
+    read -r -d '' DRAFT_PROMPT <<'PROMPT_EOF' || true
+You are writing one note in a personal knowledge wiki. Here is the source content:
+
+--- SOURCE ---
+__CONTENT__
+--- END SOURCE ---
+
+Write the note with these details:
+- Title: __TITLE__
+- Source URL: __URL__
+- This note covers only this slice of the source: __FOCUS__
+- Its role: __ROLE__
+__SOURCE_NOTE__
+__SIBLINGS__
+
+Follow this exact format. The H1 is the note's real title, capitalised naturally — the
+filename is the kebab-case version of it and is chosen already:
+
+# Title
+
+**Source:** [Title](url) - Author, Date
+
+## Summary
+
+A concise 1-2 paragraph summary of the core idea.
+
+## Section Headings for Key Concepts
+
+Break down the main ideas into logical sections. Use clear headings.
+Include bullet points for specific details, examples, or lists.
+
+## Core Insight (or Practical Implications, Takeaways, etc.)
+
+The distilled essence — what makes this knowledge worth keeping.
+
+Guidelines:
+- Keep it concise and high-signal — only capture what's worth referencing later
+- Cover your slice of the source in depth and leave the other slices to the sibling notes
+- Use the author's framing and terminology where valuable
+- Structure for scanability: headings, bullets, bold key terms
+- Attribute the source clearly at the top
+- If your role is "hub", summarise the source as a whole and end with a "## Related notes" section
+  linking every sibling note listed above, each with a one-line description
+- If your role is "spoke", put a "**Companion piece:**" line just under the Source line pointing at
+  the hub note, and link closely related siblings inline where they come up
+__FIGURE_NOTE__
+
+Output ONLY the raw markdown. No code fences. No preamble. No explanation.
+PROMPT_EOF
+
+    DRAFT_PROMPT="${DRAFT_PROMPT//__CONTENT__/$SOURCE_CONTENT}"
+    DRAFT_PROMPT="${DRAFT_PROMPT//__TITLE__/$(field "$i" title)}"
+    DRAFT_PROMPT="${DRAFT_PROMPT//__URL__/$URL}"
+    DRAFT_PROMPT="${DRAFT_PROMPT//__FOCUS__/$(field "$i" focus)}"
+    DRAFT_PROMPT="${DRAFT_PROMPT//__ROLE__/$(field "$i" role)}"
+    DRAFT_PROMPT="${DRAFT_PROMPT//__SOURCE_NOTE__/$SOURCE_NOTE}"
+    DRAFT_PROMPT="${DRAFT_PROMPT//__FIGURE_NOTE__/$FIGURE_NOTE}"
+    if [ -n "$siblings" ]; then
+        DRAFT_PROMPT="${DRAFT_PROMPT//__SIBLINGS__/Sibling notes being created from the same source:$siblings}"
+    else
+        DRAFT_PROMPT="${DRAFT_PROMPT//__SIBLINGS__/}"
+    fi
+
+    echo "$DRAFT_PROMPT" | claude -p --tools "" > "$WORKDIR/draft-$i.md"
+    [ -s "$WORKDIR/draft-$i.md" ]
+}
+
+draft_edit() {
+    local i="$1" rel target
+    rel=$(target_rel "$i")
+    target="$WIKI_DIR/$rel"
+
+    if [ ! -f "$target" ]; then
+        echo "  Proposed edit targets $rel, which does not exist." >&2
+        return 1
+    fi
+
+    read -r -d '' EDIT_PROMPT <<'PROMPT_EOF' || true
+You are making a SCOPED edit to an existing note in a personal knowledge wiki.
+
+Target note: __PATH__
+--- CURRENT CONTENT ---
+__TARGET__
+--- END CURRENT CONTENT ---
+
+New source material (URL: __URL__):
+--- SOURCE ---
+__CONTENT__
+--- END SOURCE ---
+
+What this edit must add: __WHAT__
+
+Rules:
+- Change as little as possible. Do not rewrite, reorder or reformat anything you are not adding to.
+- Match the note's existing voice, heading style and level of detail.
+- Attribute the new material to the new source, since the note was written from a different one.
+- If the note's header carries a single "**Source:**" line and you are adding material from a
+  different source, replace that line with a "**Sources:**" list naming both.
+- Every anchor must be copied VERBATIM from the current content above and must appear exactly once
+  in it. Never anchor on a blank line or on a line that repeats elsewhere in the note.
+
+Respond with ONLY a valid JSON object, no markdown fences, no other text:
+{"hunks": [{"anchor": "verbatim existing line", "position": "after|before|replace", "content": "markdown to insert"}]}
+PROMPT_EOF
+
+    EDIT_PROMPT="${EDIT_PROMPT//__PATH__/$rel}"
+    EDIT_PROMPT="${EDIT_PROMPT//__TARGET__/$(cat "$target")}"
+    EDIT_PROMPT="${EDIT_PROMPT//__URL__/$URL}"
+    EDIT_PROMPT="${EDIT_PROMPT//__CONTENT__/$SOURCE_CONTENT}"
+    EDIT_PROMPT="${EDIT_PROMPT//__WHAT__/$(field "$i" what_it_adds)}"
+
+    echo "$EDIT_PROMPT" | claude -p --tools "" \
+        | python3 "$HELPERS" extract-json > "$WORKDIR/draft-$i.json"
+}
+
+echo
+DRAFT_TOTAL=0
+for i in $(seq 0 $((ACTION_COUNT - 1))); do
+    [ "${STATUS[$i]}" = "pending" ] && DRAFT_TOTAL=$((DRAFT_TOTAL + 1))
+done
+
+drafted=0
+for i in $(seq 0 $((ACTION_COUNT - 1))); do
+    [ "${STATUS[$i]}" = "pending" ] || continue
+    drafted=$((drafted + 1))
+    echo "Drafting $drafted/$DRAFT_TOTAL — $(action_label "$i")"
+    if [ "$(field "$i" type)" = "new" ]; then
+        draft_new_note "$i" || STATUS[i]="failed"
+    else
+        draft_edit "$i" || STATUS[i]="failed"
+    fi
+    [ "${STATUS[$i]}" = "failed" ] && echo "  Draft failed — this action will be skipped."
+done
+
+# --- Step 5: Review ---
+
+# For a new note the preview is the draft itself; for an edit it is a unified diff
+# against the current note, which is the only way to see a scoped edit in context.
+build_preview() {
+    local i="$1" rel preview target applied
+    rel=$(target_rel "$i")
+    preview="$WORKDIR/preview-$i.md"
+
+    if [ "$(field "$i" type)" = "new" ]; then
+        cp "$WORKDIR/draft-$i.md" "$preview"
+        return 0
+    fi
+
+    target="$WIKI_DIR/$rel"
+    applied="$WORKDIR/applied-$i.md"
+    if ! python3 "$HELPERS" apply-hunks "$target" "$WORKDIR/draft-$i.json" "$applied" 2>"$WORKDIR/apply-$i.err"; then
+        {
+            echo "# Edit could not be applied — $rel"
+            echo
+            echo '```'
+            cat "$WORKDIR/apply-$i.err"
+            echo '```'
+            echo
+            echo "Chat about this draft to fix the anchors, or skip it."
+        } > "$preview"
+        return 1
+    fi
+
+    {
+        echo "# $(field "$i" kind) edit — $rel"
+        echo
+        field "$i" what_it_adds
+        echo
+        echo '```diff'
+        diff -u "$target" "$applied" | tail -n +3 || true
+        echo '```'
+    } > "$preview"
+}
+
+chat_about() {
+    local i="$1" rel draft seed images=""
+    rel=$(target_rel "$i")
+    # The chat is the one step that can open the images, so point it at them
+    [ -n "$BUNDLE_DIR" ] && images=" The source's images are in $BUNDLE_DIR/images, and an image link in the draft resolves to a file there — read them if a figure is in question."
+
+    if [ "$(field "$i" type)" = "new" ]; then
+        draft="$WORKDIR/draft-$i.md"
+        seed="I'm drafting a note for my knowledge wiki, destined for $rel. The draft is at @$draft and the source material it came from is at @$SOURCE_FILE. Discuss it with me and edit the draft file in place when I ask. Keep it raw markdown, with no code fences wrapping the whole document.${images} Start by waiting for my questions."
+    else
+        draft="$WORKDIR/draft-$i.json"
+        seed="I'm preparing a scoped edit to the note at $WIKI_DIR/$rel in my knowledge wiki. The edit should add: $(field "$i" what_it_adds). It is expressed as anchor-based hunks in @$draft, of the form {\"hunks\":[{\"anchor\":\"verbatim line from the target note\",\"position\":\"after|before|replace\",\"content\":\"markdown\"}]}. Every anchor must be copied verbatim from the target note and must appear exactly once in it. The new source material is at @$SOURCE_FILE. Discuss the edit with me and rewrite that JSON file in place when I ask, keeping it valid and in the same schema. Do not edit the note itself. Start by waiting for my questions."
+    fi
+
+    echo "Opening a Claude Code chat about this draft — exit it to come back here."
+    claude "$seed" || true
+}
+
+ACCEPT_REST_LINKS=0
+
+review_action() {
+    local i="$1" choice options=("Accept" "Skip" "Chat about it")
+    # Link edits are one line each, so offer to wave the rest through together
+    [ "$(field "$i" kind)" = "link" ] && options=("Accept" "Accept every remaining link" "Skip" "Chat about it")
+
+    while true; do
+        build_preview "$i" || true
+        view_in_pager "$WORKDIR/preview-$i.md"
+        choice=$(gum choose --header "$(action_label "$i")" "${options[@]}") || choice="Skip"
+        case "$choice" in
+            Accept|"Accept every remaining link")
+                # A broken edit would only fail later, at apply time; surface it now
+                if [ "$(field "$i" type)" != "new" ] && ! build_preview "$i"; then
+                    echo "This edit still doesn't apply cleanly — chat about it or skip it."
+                    continue
+                fi
+                [ "$choice" = "Accept every remaining link" ] && ACCEPT_REST_LINKS=1
+                STATUS[i]="accept"; return ;;
+            Skip)
+                STATUS[i]="skip"; return ;;
+            *)
+                chat_about "$i" ;;
+        esac
+    done
+}
+
+echo
+if gum confirm "Review each draft?"; then
+    for i in $(seq 0 $((ACTION_COUNT - 1))); do
+        [ "${STATUS[$i]}" = "pending" ] || continue
+        if [ "$ACCEPT_REST_LINKS" = "1" ] && [ "$(field "$i" kind)" = "link" ]; then
+            STATUS[i]="accept"
+            continue
+        fi
+        review_action "$i"
+    done
+else
+    pending=0
+    for i in $(seq 0 $((ACTION_COUNT - 1))); do
+        if [ "${STATUS[$i]}" = "pending" ]; then
+            STATUS[i]="accept"
+            pending=$((pending + 1))
+        fi
+    done
+    if ! gum confirm "Apply all $pending action(s) without reviewing?"; then
+        echo "Aborted."
+        exit 0
+    fi
+fi
+
+# --- Step 6: Apply ---
+
+# Navigation in this vault is the links a section's page carries, so a note that
+# nothing lists is a note nobody finds. These wire a new note into that list.
+
+# "agentic-systems" -> "Agentic Systems", for the H1 of a section page we create
+section_title() {
+    echo "$1" | sed 's/-/ /g' \
+        | awk '{for (i = 1; i <= NF; i++) $i = toupper(substr($i, 1, 1)) substr($i, 2)} 1'
+}
+
+# The page that should list a given note: its section's own page, or the page of
+# the section above when the note IS its section's page. Empty for a root file.
+section_page_for() {
+    local rel="$1" dir stem base parent
+    dir=$(dirname "$rel")
+    stem=$(basename "$rel" .md)
+    [ "$dir" = "." ] && return 0
+    base=$(basename "$dir")
+    if [ "$stem" = "$base" ]; then
+        parent=$(dirname "$dir")
+        if [ "$parent" = "." ]; then
+            echo "README.md"
+        else
+            echo "$parent/$(basename "$parent").md"
+        fi
+    else
+        echo "$dir/$base.md"
+    fi
+}
+
+# List $1 on its section's page, creating that page — and listing it in turn —
+# when the section is new. Echoes what to append to the summary line.
+ensure_listed() {
+    local rel="$1" title="$2" page page_title
+    page=$(section_page_for "$rel")
+    [ -n "$page" ] || return 0
+
+    if [ ! -f "$WIKI_DIR/$page" ]; then
+        page_title=$(section_title "$(basename "$page" .md)")
+        mkdir -p "$(dirname "$WIKI_DIR/$page")"
+        printf '# %s\n' "$page_title" > "$WIKI_DIR/$page"
+        # This runs inside a command substitution, so the summary is passed back
+        # through a file rather than by appending to APPLIED in a subshell
+        echo "wrote    $page  (new section page)" >> "$WORKDIR/created-pages"
+        ensure_listed "$page" "$page_title" > /dev/null
+    fi
+
+    if [ -n "$(python3 "$HELPERS" index-link "$WIKI_DIR/$page" "$WIKI_DIR/$rel" "$title")" ]; then
+        printf '  (listed in %s)' "$page"
+    fi
+    return 0
+}
+
+index_new_note() {
+    local title
+    title=$(field "$1" title)
+    [ -n "$title" ] || title=$(head -1 "$WIKI_DIR/$2" | sed 's/^# *//')
+    ensure_listed "$2" "$title"
+}
+
+# A figure the note kept is still pointing into the download, so bring the file
+# along: copy it into the category's images/ folder and rewrite the link the way
+# the wiki already writes them. Echoes what to append to the summary line.
+wire_note_images() {
+    local copied
+    [ -n "$BUNDLE_DIR" ] || return 0
+    copied=$(python3 "$HELPERS" wire-images "$1" "$BUNDLE_DIR/images" | wc -l | tr -d ' ')
+    [ "$copied" -gt 0 ] && printf '  (+%s image%s)' "$copied" "$([ "$copied" = 1 ] || echo s)"
+    return 0
+}
+
+echo
+APPLIED=()
+for i in $(seq 0 $((ACTION_COUNT - 1))); do
+    [ "${STATUS[$i]}" = "accept" ] || continue
+    rel=$(target_rel "$i")
+    target="$WIKI_DIR/$rel"
+
+    if [ "$(field "$i" type)" = "new" ]; then
+        if [ -f "$target" ] && ! gum confirm "$rel already exists. Overwrite it?"; then
+            echo "Skipped $rel"
+            continue
+        fi
+        mkdir -p "$(dirname "$target")"
+        cp "$WORKDIR/draft-$i.md" "$target"
+        APPLIED+=("wrote    $rel$(wire_note_images "$target")$(index_new_note "$i" "$rel")")
+    elif python3 "$HELPERS" apply-hunks "$target" "$WORKDIR/draft-$i.json" "$WORKDIR/final-$i.md"; then
+        cp "$WORKDIR/final-$i.md" "$target"
+        APPLIED+=("edited   $rel$(wire_note_images "$target")")
+    else
+        echo "Failed to apply the edit to $rel — left unchanged." >&2
+    fi
+done
+
+if [ -s "$WORKDIR/created-pages" ]; then
+    while IFS= read -r line; do APPLIED+=("$line"); done < "$WORKDIR/created-pages"
+fi
+
+if [ ${#APPLIED[@]} -eq 0 ]; then
+    echo "Nothing was written."
+    exit 0
+fi
+
+echo
+gum style --foreground 82 "${APPLIED[@]}"
+if [ -n "$BUNDLE_DIR" ]; then
+    echo
+    echo "The whole downloaded source — text, images, raw payload — is in $BUNDLE_DIR"
+fi

@@ -1,2 +1,6 @@
 /tmp/
 /.obsidian/workspace*.json
+
+# Python bytecode from the bin/ tooling
+__pycache__/
+*.pyc
