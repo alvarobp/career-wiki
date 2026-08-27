@@ -1,41 +1,41 @@
-# Career
 
-[Artificial Intelligence](Artificial%20Intelligence.md)
 
-[Infrastructure](Infrastructure.md)
+[Artificial Intelligence](Artificial%20Intelligence/README.md)
 
-[Architecture](Architecture.md)
+[Infrastructure](Infrastructure/README.md)
 
-[Organisation](Organisation.md)
+[Architecture](Architecture/README.md)
 
-[Product](Product.md)
+[Organisation](Organisation/README.md)
 
-[Agile](Agile.md)
+[Product](Product/README.md)
 
-[Quality Assurance & Testing](Quality%20Assurance%20%26%20Testing.md)
+[Agile](Agile/README.md)
 
-[Programming Languages](Programming%20Languages.md)
+[Quality Assurance & Testing](Quality%20Assurance%20%26%20Testing/README.md)
 
-[Development](Development.md)
+[Programming Languages](Programming%20Languages/README.md)
 
-[Management](Management.md)
+[Development](Development/README.md)
 
-[Soft Skills](Soft%20Skills.md)
+[Management](Management/README.md)
 
-[DevOps](DevOps.md)
+[Soft Skills](Soft%20Skills/README.md)
 
-[GIS](GIS.md)
+[DevOps](DevOps/README.md)
 
-[Frontend](Frontend.md)
+[GIS](GIS/README.md)
 
-[Resources](Resources.md)
+[Frontend](Frontend/README.md)
+
+[Resources](Resources/README.md)
 
 [Tooling](Tooling.md)
 
 [Project Management](Project%20Management.md)
 
-[Self-Organization / Productivity](Self-Organization%20Productivity.md)
+[Self-Organization / Productivity](Self-Organization%20Productivity/README.md)
 
-[Jobs](Jobs.md)
+[Jobs](Jobs/README.md)
 
-[SRE / Operations](SRE%20Operations.md)
+[SRE / Operations](SRE%20Operations/README.md)
