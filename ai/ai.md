@@ -4,7 +4,9 @@
 
 [Coding](coding/coding.md)
 
-[Context Engineering](context-engineering.md)
+[AI Engineering](ai-engineering/ai-engineering.md)
+
+[Context Engineering](context-engineering/context-engineering.md)
 
 [Prompt Engineering](prompt-engineering/prompt-engineering.md)
 

@@ -2,7 +2,7 @@
 
 **Source:** [Own the Outer Loop](https://x.com/addyosmani/status/2074927530482835916) - Addy Osmani, 2026-07-08
 
-**Companion piece:** [Own the Outer Loop](../../agentic-coding/own-the-outer-loop.md)
+**Companion piece:** [Own the Outer Loop](../../coding/own-the-outer-loop.md)
 
 ## Summary
 
@@ -51,7 +51,7 @@ Plotted against model releases, speed decays fastest, verification next, taste s
 - A **signature** is your name on the work, such that you can stand behind what shipped.
 - **Skills get you leverage; accountability turns leverage into trust.**
 - Accountability survives because it isn't a capability at all: agents can choose, route, merge and escalate inside a policy, but **only people inherit consequences**. Nothing in a model release changes that.
-- The career move that follows: keep pushing your edge up from *doing* the task to teaching it, systematising it, deciding when it should be done, and owning the result — which is the top of [The Agency Ladder](../../agentic-coding/agency-ladder.md).
+- The career move that follows: keep pushing your edge up from *doing* the task to teaching it, systematising it, deciding when it should be done, and owning the result — which is the top of [The Agency Ladder](../../coding/agency-ladder.md).
 
 ## Core Insight
 

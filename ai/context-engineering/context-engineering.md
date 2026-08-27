@@ -20,3 +20,9 @@ Context engineering quickly becomes a core skill for anyone working with large l
 ### Memory
 
 [Architecting Agent Memory: Principles, Patterns, and Best Practices — Richmond Alake, MongoDB](https://www.youtube.com/watch?v=W2HVdB4Jbjs)
+
+## Notes
+
+[Intentional Compaction](intentional-compaction.md)
+
+[Managing Context for AI Coding](managing-context-for-ai-coding.md)

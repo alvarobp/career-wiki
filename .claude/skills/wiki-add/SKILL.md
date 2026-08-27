@@ -19,10 +19,10 @@ this wiki as a well-structured markdown note.
 The repository root *is* the wiki, and it is an Obsidian vault. Everything at the top level is a
 section except `bin/`, `.claude/`, `tmp/` and `README.md`.
 
-- **On disk, everything is kebab-case ASCII**: `ai/context-engineering.md`.
+- **On disk, everything is kebab-case ASCII**: `ai/coding/write-only-code.md`.
 - **In the text, titles keep their natural capitalisation**: the note's real title is the H1 on its
   first line, and link labels are written that way too —
-  `[Context Engineering](context-engineering.md)`.
+  `[Write-Only Code](write-only-code.md)`.
 - **A section is a folder, and its own page is the note inside it that shares its name.**
   `architecture/` is a section; `architecture/architecture.md` is its page. That page carries the
   list of links to everything in the section — that list is how the vault is navigated.

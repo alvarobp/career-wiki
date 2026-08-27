@@ -18,7 +18,7 @@ The repository root **is** the wiki. Everything at the top level is a section of
 
 **On disk everything is kebab-case ASCII; in the text titles keep their capitalisation.**
 
-- `ai/context-engineering.md` holds `# Context Engineering` on its first line,
+- `ai/coding/write-only-code.md` holds `# Write-Only Code` on its first line,
   and other notes link to it with the title as the label and the kebab-case path as the target.
 - The H1 is the note's real title. The filename is the kebab-case form of it.
 

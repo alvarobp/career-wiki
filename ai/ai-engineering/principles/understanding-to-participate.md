@@ -44,5 +44,5 @@ Correctness checking is being automated; **participation cannot be**. Understand
 
 ## Related notes
 
-- [Explainer Docs and Comprehension Quizzes](../../agentic-coding/techniques/explainer-docs-and-quizzes.md) — Litt's `explaindiff` skill: background-first, intuition-before-details explainer docs with literate code diffs, closed out by a five-question quiz you must pass before sending code for review.
-- [Microworlds: Agent-Built Environments for Understanding Code](../../agentic-coding/techniques/microworlds.md) — having agents build throwaway debuggers, timeline scrubbers, and click-through simulations of your own system so you develop a feel for the machine.
+- [Explainer Docs and Comprehension Quizzes](../../coding/techniques/explainer-docs-and-quizzes.md) — Litt's `explaindiff` skill: background-first, intuition-before-details explainer docs with literate code diffs, closed out by a five-question quiz you must pass before sending code for review.
+- [Microworlds: Agent-Built Environments for Understanding Code](../../coding/techniques/microworlds.md) — having agents build throwaway debuggers, timeline scrubbers, and click-through simulations of your own system so you develop a feel for the machine.

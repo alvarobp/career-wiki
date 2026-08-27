@@ -68,7 +68,7 @@ In the [interview with Boris](https://www.youtube.com/watch?v=qyPCVqFUyDo), Clau
 - A single task fans out into stages — a first pass by many agents, a second stage that verifies or summarises the work, a third fan-out — which is orchestrator-subagent and generator-verifier composed rather than chosen between
 - Framed as a **new form of test-time compute**: after neural net size, training data and training flops came token generation at inference, and orchestration is now a further axis for scaling the compute spent on a hard task
 
-See [Long-Running Agents and Dynamic Workflows](../agentic-coding/techniques/long-running-agents-and-dynamic-workflows.md) for the practical side — verification loops, steering, and tasks that run for days or weeks.
+See [Long-Running Agents and Dynamic Workflows](../coding/techniques/long-running-agents-and-dynamic-workflows.md) for the practical side — verification loops, steering, and tasks that run for days or weeks.
 
 ## Where This Stops: The Orchestration Tax
 

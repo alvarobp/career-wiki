@@ -41,7 +41,7 @@ The skill has shifted away from prompt engineering (and its successor fashion, c
 1. How do you give Claude a task that seems **a little too hard**?
 2. How do you make it possible for Claude to **verify its own work** along the way?
 
-Cherny calls verification "the single most important thing that people do not get right." A task with a verification loop will run; a task without one gets stuck. This is the mechanism behind [Long-Running Agents and Dynamic Workflows](../../agentic-coding/techniques/long-running-agents-and-dynamic-workflows.md) — the long horizon is downstream of good verification, not of clever prompting.
+Cherny calls verification "the single most important thing that people do not get right." A task with a verification loop will run; a task without one gets stuck. This is the mechanism behind [Long-Running Agents and Dynamic Workflows](../../coding/techniques/long-running-agents-and-dynamic-workflows.md) — the long horizon is downstream of good verification, not of clever prompting.
 
 ## The Anti-Pattern: Overengineering
 
@@ -56,6 +56,6 @@ Cherny's advice on where to learn this: "Don't listen to the LinkedIn influencer
 
 **The constraint on what AI products can do is rarely the model — it's the product.** At every generation there is a capability surplus sitting unused because no interface invites the model to express it, and often because the interface actively suppresses it.
 
-This reframes product work as **subtraction plus elicitation**: remove the scaffolding you inherited from a weaker model, ask for something slightly beyond what you believe is possible, and give the model a way to check its own answer. The same subtractive discipline applied to prompts and tools is covered in [Ablation-Driven Harness Design](../../agentic-coding/techniques/ablation-driven-harness-design.md).
+This reframes product work as **subtraction plus elicitation**: remove the scaffolding you inherited from a weaker model, ask for something slightly beyond what you believe is possible, and give the model a way to check its own answer. The same subtractive discipline applied to prompts and tools is covered in [Ablation-Driven Harness Design](../../coding/techniques/ablation-driven-harness-design.md).
 
 The corollary for founders: the next Claude Code is not gated on the next model. It's gated on someone noticing what the current one can already do.
