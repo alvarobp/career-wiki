@@ -87,8 +87,14 @@ class Images:
     @staticmethod
     def _basename(source):
         path = urllib.parse.urlparse(source).path if "://" in source else source
+        # An image CDN wraps the original URL inside its own path, so the name
+        # worth having is at the end of what that decodes to
+        path = urllib.parse.unquote(path).rstrip("/")
         base = re.sub(r"[^A-Za-z0-9._-]", "-", os.path.basename(path)) or "image"
-        return base if re.search(r"\.[A-Za-z0-9]{2,4}$", base) else base + ".jpg"
+        stem, ext = os.path.splitext(base)
+        if not re.match(r"^\.[A-Za-z0-9]{2,4}$", ext):
+            stem, ext = base, ".jpg"
+        return (stem[:50].strip("-.") or "image") + ext
 
     def collect(self):
         """Fetch or copy every registered image. Returns the number that failed.
@@ -354,19 +360,30 @@ class HtmlToMarkdown(HTMLParser):
     emphasis, code and — the reason this path exists at all — images.
     """
 
-    def __init__(self, images, base_dir, base_url=None):
+    def __init__(self, images, base_dir, base_url=None, scope=None):
         super().__init__(convert_charrefs=True)
         self.images, self.base_dir, self.base_url = images, base_dir, base_url
         self.out, self.skip_depth, self.list_stack = [], 0, []
         self.pre, self.link, self.title = False, None, ""
         self.in_title = False
+        # A publication's chrome — logo, subscribe box, author avatar, menus —
+        # is worth nothing in a note and costs a caption call per image. Where
+        # the page marks its article, only what is inside it is read.
+        self.scope, self.scope_depth = scope, 0
+
+    def wanted(self):
+        return self.scope_depth > 0 if self.scope else True
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
+        if tag == self.scope:
+            self.scope_depth += 1
         if tag in SKIPPED_TAGS:
             self.skip_depth += 1
             return
         if self.skip_depth:
+            return
+        if tag != "title" and not self.wanted():
             return
         if tag == "title":
             self.in_title = True
@@ -409,6 +426,11 @@ class HtmlToMarkdown(HTMLParser):
             return
         if self.skip_depth:
             return
+        inside = self.wanted()
+        if tag == self.scope:
+            self.scope_depth = max(self.scope_depth - 1, 0)
+        if tag != "title" and not inside:
+            return
         if tag == "title":
             self.in_title = False
         elif tag in ("ul", "ol") and self.list_stack:
@@ -432,7 +454,7 @@ class HtmlToMarkdown(HTMLParser):
         if self.in_title:
             self.title += data.strip()
             return
-        if self.skip_depth:
+        if self.skip_depth or not self.wanted():
             return
         self.out.append(data if self.pre else re.sub(r"\s+", " ", data))
 
@@ -440,6 +462,18 @@ class HtmlToMarkdown(HTMLParser):
         text = html.unescape("".join(self.out))
         text = re.sub(r"[ \t]+\n", "\n", text)
         return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
+# Only the outermost of these is used, and only when the page has one at all
+ARTICLE_TAGS = ("article", "main")
+
+
+def article_scope(raw):
+    """The tag holding the article proper, if the page marks one."""
+    for tag in ARTICLE_TAGS:
+        if re.search(r"<%s[\s>]" % tag, raw, re.I):
+            return tag
+    return None
 
 
 def pick_source_file(path):
@@ -474,7 +508,7 @@ def download_local(path, outdir):
         raw = handle.read()
 
     if re.search(r"\.html?$", source, re.I):
-        parser = HtmlToMarkdown(images, base_dir)
+        parser = HtmlToMarkdown(images, base_dir, scope=article_scope(raw))
         parser.feed(raw)
         body, title = parser.markdown(), parser.title
     else:
@@ -638,7 +672,8 @@ def download_curl(path, outdir):
         handle.write(raw)
 
     images = Images(outdir, fetcher=get_image)
-    parser = HtmlToMarkdown(images, base_dir=None, base_url=spec["url"])
+    parser = HtmlToMarkdown(images, base_dir=None, base_url=spec["url"],
+                            scope=article_scope(raw))
     parser.feed(raw)
     meta = {"kind": "paywalled-page", "title": parser.title, "url": spec["url"],
             "author": "", "handle": "", "date": "", "saved_from": ""}
