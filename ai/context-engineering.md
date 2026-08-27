@@ -11,6 +11,8 @@ Context engineering quickly becomes a core skill for anyone working with large l
 
 [https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-03-own-your-context-window.md](https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-03-own-your-context-window.md)
 
+[The Telephone Game of Software](https://refactoring.fm/p/the-telephone-game-of-software) — software travels from intent to code through a chain of lossy translations, and durable platform docs (architecture and abstractions files, a design system, product principles) are what let the context you supply per task stay small: everything the platform already records is context the spec no longer has to spell out.
+
 ## RAG
 
 ["I don't use RAG, I just retrieve documents"](https://maven.com/p/569540/i-don-t-use-rag-i-just-retrieve-documents)

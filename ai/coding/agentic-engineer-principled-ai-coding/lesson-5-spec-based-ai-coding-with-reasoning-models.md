@@ -31,4 +31,10 @@
 - **Takeaway:**
     - Effective planning equates to effective code prompting. The lessons learned here are crucial to developing as an engineer capable of leveraging AI in coding.
 
+- **Counter-position — write smaller specs, not bigger ones:**
+    - Luca Rossi's [The Telephone Game of Software](../the-telephone-game-of-software.md) argues that the big-spec-up-front approach this lesson teaches over-focuses on the task at hand at the expense of improving the system over time.
+    - Its specific objection is to putting stack, architecture, legacy systems, compliance and performance targets into the spec: you would not spell any of that out for an engineer on your team, because it belongs to the standing context of the work.
+    - The alternative is **platform, not spec**: product docs, app principles, a design system, `ARCHITECTURE.md` and `ABSTRACTIONS.md`, and gates on the code itself — so the model infers what you would otherwise have to write down, and the spec shrinks to just the intent for this task.
+    - It also questions the premise that you can write the full spec at all, since your understanding of the feature often improves only by prototyping and clicking on things. Its version of the spec is a living collaboration surface the model enriches with the decisions it made, which you then inspect.
+
 This lesson lays the groundwork for future coding practices using AI that are expected to greatly enhance productivity and quality in software development. The next lesson promises to build on this knowledge by exploring how to eliminate entire classes of engineering work using AI alongside the principles covered in this lesson.

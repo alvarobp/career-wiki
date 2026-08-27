@@ -4,6 +4,8 @@
 
 [Agentic Engineer - Principled AI Coding](agentic-engineer-principled-ai-coding/agentic-engineer-principled-ai-coding.md)
 
+[The Telephone Game of Software](the-telephone-game-of-software.md)
+
 ## People
 
 - Ray Fernando [https://www.rayfernando.ai/](https://www.rayfernando.ai/)
