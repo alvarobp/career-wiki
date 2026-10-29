@@ -43,6 +43,17 @@ Other form factors trade differently:
 - **Mobile apps** — touch-optimised layouts, disciplined by screen size
 - **Web dashboards** — desktop layouts with multiple panels and room for complex navigation
 
+## Counterpoint: the end of the product
+
+Javier Cañada's essay [El fin del producto](https://tramontana.ai/fin-producto) ("The End of the Product", Instituto Tramontana) questions this framing. Form factor treats the interface as the upstream decision that everything else follows from. Cañada says the interface was never the important part.
+
+- **Digital design builds an intermediate layer**: a new interface between a person and an old function such as travel, shopping, or moving money.
+- **What gave a company its edge was what sat behind that layer**: capital, operations, and a legal framework. The operations used to take millions of human hours and now start to take tens of machine hours, so "the monopoly of operations is broken."
+- **A product is a standardised way of meeting a need.** AI agents can now build a solution for each person's own context, so the standardised product stops making sense.
+- **What AI kills is not the interface but intermediation.** An earlier argument of his, that AI turns graphical interfaces into conversational ones, now reads to him as the surface of the change.
+
+If he is right, picking a form factor still decides how users reach the product, but it says nothing about whether a standardised product should sit between them and the function at all. That question is further upstream. His test for it is the one he put to a worried CEO: "If you started from scratch today, what would you keep?"
+
 ## Core Insight
 
 The form factor is chosen once and then answers a hundred later questions on your behalf. Debating a feature's visibility, its onboarding, or its extensibility in isolation is usually a debate about a decision already made upstream — so treat the form factor as a first-class product decision, not as the container the real decisions go in.

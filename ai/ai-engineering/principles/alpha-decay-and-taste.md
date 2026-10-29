@@ -1,6 +1,8 @@
 # Alpha, Decay, and Taste
 
-**Source:** [Own the Outer Loop](https://x.com/addyosmani/status/2074927530482835916) - Addy Osmani, 2026-07-08
+**Sources:**
+- [Own the Outer Loop](https://x.com/addyosmani/status/2074927530482835916) - Addy Osmani, 2026-07-08
+- [El fin del producto](https://tramontana.ai/fin-producto) - Javier Cañada (Instituto Tramontana)
 
 **Companion piece:** [Own the Outer Loop](../../coding/own-the-outer-loop.md)
 
@@ -52,6 +54,18 @@ Plotted against model releases, speed decays fastest, verification next, taste s
 - **Skills get you leverage; accountability turns leverage into trust.**
 - Accountability survives because it isn't a capability at all: agents can choose, route, merge and escalate inside a policy, but **only people inherit consequences**. Nothing in a model release changes that.
 - The career move that follows: keep pushing your edge up from *doing* the task to teaching it, systematising it, deciding when it should be done, and owning the result — which is the top of [The Agency Ladder](../../coding/agency-ladder.md).
+
+## A darker answer: run
+
+Javier Cañada's *El fin del producto* asks the same career question and gives a much bleaker answer. Osmani assumes there is still a discipline to move your weight around in. Cañada isn't sure there will be.
+
+- A **product is a standardised way of meeting a need**, and digital design builds the intermediate layer between a person and an old function such as travel, shopping or moving money. Agents can now build a solution fitted to each person's context, so standardisation, and the intermediation built on it, loses its reason to exist. *What has died is not the interface but intermediation.*
+- Operations used to be the moat, because they took millions of human hours. Now they take tens of machine hours, so *"the monopoly of operations is broken."* Regulation won't save the incumbents' layer, because the incumbents write the regulation.
+- When a technology changes energy, production and communication at once, as in 1890–1920, it changes civilisation in about thirty years. Arguing over Figma and design systems is arguing over carriage upholstery in 1890s Vienna.
+- The one question he could offer a CEO: *"If you started from scratch today, what would you keep?"*
+- His career advice: **run, in any direction, and don't save energy for the way back, because there will be nowhere to return to.**
+
+Read against Osmani, it's the same decay curve applied to a whole discipline instead of a single skill. Taste and accountability give you the longest runway inside a field. Cañada's point is that if the field itself is a capability, it decays too.
 
 ## Core Insight
 

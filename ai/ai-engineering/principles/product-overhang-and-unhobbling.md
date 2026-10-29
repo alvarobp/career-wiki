@@ -1,6 +1,8 @@
 # Product Overhang and Unhobbling
 
-**Source:** [Boris Cherny: Stop Hobbling Your AI](https://www.youtube.com/watch?v=qyPCVqFUyDo) - Y Combinator, 2026-07-27
+**Sources:**
+- [Boris Cherny: Stop Hobbling Your AI](https://www.youtube.com/watch?v=qyPCVqFUyDo) - Y Combinator, 2026-07-27
+- [El fin del producto](https://tramontana.ai/fin-producto) - Javier Cañada, Instituto Tramontana
 
 ## Summary
 
@@ -51,6 +53,17 @@ Cherny calls verification "the single most important thing that people do not ge
 - There is no "one weird trick." The approach is empirical: give it a hard task, give it verification tools, watch where it struggles, then fix that specific thing with better prompting, a skill, or an MCP for missing context.
 
 Cherny's advice on where to learn this: "Don't listen to the LinkedIn influencers. Don't read Twitter."
+
+## The Opposite Reading: The End of the Product
+
+Javier Cañada's essay *El fin del producto* ("The End of the Product") looks at the same capability surplus from the side of the business that is being replaced, and comes to the opposite conclusion:
+
+- A **product** is a standardised way of meeting a need. Digital product designers build the intermediate layer between a person and an old function: travel, shopping, moving money.
+- A service company comes down to capital, operations and a legal framework. What set companies apart was their costly operations, and work that once took millions of human hours now starts to take tens of machine hours. "The monopoly of operations is broken."
+- AI agents can build a solution fitted to each person's context, so standardisation, and with it the digital product, loses its reason to exist. What dies is not the interface but **intermediation**. Regulation won't hold this back, because the incumbents write it.
+- His one question for a CEO whose company AI already half-replaces: "If you started from scratch today, what would you keep?"
+
+Cherny treats unelicited capability as where the next product comes from. Cañada treats the same capability as what makes the standardised product obsolete. The two readings agree on the facts: the model can already do far more than the products around it let it.
 
 ## Core Insight
 
