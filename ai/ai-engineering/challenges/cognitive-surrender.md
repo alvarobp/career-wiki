@@ -6,6 +6,8 @@
 
 - [The Orchestration Tax](https://x.com/addyosmani/status/2059844244907696186?s=12) — Addy Osmani
 
+- [Critical thinking when agents do the work](https://x.com/addyosmani/status/2117512471930167377) — Addy Osmani, November 3, 2026
+
 ## Summary
 
 Cognitive surrender is the failure mode where engineers stop forming independent judgments about AI output and instead absorb the model's confidence as their own. It is distinct from cognitive offloading — delegating execution while still evaluating results — because surrender abandons evaluation entirely. The outputs may look identical: shipped code, closed tickets, green CI. But underneath, the engineer's mental model is hollowing out, accruing "comprehension debt" that compounds with every unexamined acceptance.
@@ -45,6 +47,22 @@ The compounding nature is the trap: once the mental model is partially hollow, t
 Osmani's later piece on the orchestration tax supplies the mechanism underneath the failure: surrender is usually not a lapse of discipline but the visible symptom of an attention budget that has been over-subscribed. Starting an agent is a keystroke; closing the loop on one — checking correctness, reconciling it with what the other agents touched — has to acquire a single lock, and there is exactly one of you holding it. Spawning eight agents does not speed up judgment. It deepens the queue in front of it.
 
 When production exceeds review capacity, the deficit does not vanish; it gets paid by silently lowering standards. In his words: "If you try to grind it out, the limit just shows up as shallow code reviews or experiencing cognitive surrender where you just accept the agent's code because forming your own opinion costs attention you don't have anymore." Read this way, surrender is what an over-subscribed serial reviewer does under load — which means willpower is the wrong lever. The fix is backpressure: scale the number of parallel agents to your actual review rate rather than to what the UI permits, batch reviews so you pay fewer cold context reloads, and spend the lock only on the judgment the machine cannot verify for itself.
+
+## The Slide Toward Surrender
+
+> See the companion piece: [Critical Thinking When Agents Do the Work](../critical-thinking-when-agents-do-the-work.md).
+
+Osmani's follow-up treats surrender as the bottom of a spectrum, not a single failure. At the top sits **cognitive offloading**: you delegate the task but keep ownership of the result. In the middle is **deferral**: the tool's output becomes your new input, and it has stopped being a hypothesis. At the bottom is **surrender**: the output quietly becomes your own, and you feel no need to check it. People drift down the spectrum one reasonable step at a time. You read the last answer well, so you skim the next one, and then you only scan its skeleton. The drift gets easier as models improve, because fewer outputs carry an obvious error that would demand a second look.
+
+His test for where you stand: "When you can't explain the answer to a question, even by way of your agent, you've ceded ownership." Delegating completely is fine where being wrong is cheap. Keep the reasoning where other people will live with the consequences. The habits he offers are aimed at stopping the slide:
+
+- Form a hypothesis before you ask.
+- Ask what would have to be true for the answer to be wrong.
+- Define "verified" upfront.
+- When a check goes green, ask what it proved and what it didn't.
+- Have the agent list the decisions and assumptions it made.
+- Quiz yourself before you merge.
+- Hold one bar for everything: if you wouldn't put your name on it, it doesn't go out.
 
 ## Resistance Strategies
 
