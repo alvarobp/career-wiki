@@ -97,3 +97,5 @@ The framing matches the factory's own logic: you stop prompting the agent and in
 - [Loop Engineering](../loop-engineering.md) — The factory running on a timer, prompting itself
 
 - [Token Harder vs Token Smarter](../token-harder-vs-token-smarter.md) — Maximising token throughput versus seeking leverage points
+
+[How to Build a Software Factory That Improves Itself](software-factory-that-improves-itself.md)
