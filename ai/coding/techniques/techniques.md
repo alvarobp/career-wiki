@@ -29,3 +29,5 @@
 [The Missing Manual: How to Write Great Agent Skills](writing-great-agent-skills.md)
 
 [Zero Token Architecture: Infer Once, Export, Run Without Inference](zero-token-architecture.md)
+
+[The Home Repo Pattern](home-repo-pattern.md)
