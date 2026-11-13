@@ -185,7 +185,16 @@ IS_ORIGINAL=""
 # a fixed language gets a machine translation of the audio rather than the audio
 # itself. The generated track for the spoken language is the only one suffixed
 # "-orig", so this regex picks it whatever language the video is in.
-if fetch_captions orig ".*-orig" auto; then
+#
+# A video with dubbed audio tracks has a "-orig" track per dub, though, and the
+# first of them alphabetically is rarely the one spoken on camera. The video's own
+# metadata names that language, so ask for its track before taking any of them.
+SPOKEN_LANG=$(normalize_lang "$(yt-dlp --skip-download --no-warnings --print "%(language)s" "$URL" 2>/dev/null | head -1)")
+[ "$SPOKEN_LANG" = "na" ] && SPOKEN_LANG=""
+if [ -n "$SPOKEN_LANG" ] && fetch_captions orig "${SPOKEN_LANG}(-[A-Za-z]+)?-orig" auto; then
+    CHOSEN_VTT=$(first_vtt orig)
+    IS_ORIGINAL=yes
+elif fetch_captions orig ".*-orig" auto; then
     CHOSEN_VTT=$(first_vtt orig)
     IS_ORIGINAL=yes
 fi

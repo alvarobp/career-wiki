@@ -33,6 +33,9 @@ _cached_original() {
     for file in "tmp/transcript-${1}-"*-orig.txt; do
         _transcript_cached "$file" && { echo "$file"; return; }
     done
+    # Nothing cached is not a failure: callers check for empty output, and a
+    # non-zero status here would abort a `set -e` caller without a word.
+    return 0
 }
 
 # The cached transcript whose text is in $2, whether that's because the video is
@@ -42,6 +45,9 @@ _cached_in_lang() {
     for file in "tmp/transcript-${1}-${2}-orig.txt" "tmp/transcript-${1}-${2}.txt"; do
         _transcript_cached "$file" && { echo "$file"; return; }
     done
+    # Nothing cached is not a failure: callers check for empty output, and a
+    # non-zero status here would abort a `set -e` caller without a word.
+    return 0
 }
 
 ensure_transcript() {
